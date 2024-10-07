@@ -1,0 +1,1618 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>ToddlerTyper</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="description" content="ToddlerTyper is a fun and colorful typing game for young children. Press keys to see big letters bounce on the screen, hear sounds, and watch cool animations. Practice letters and simple words while having fun with colors and emojis." />
+<script type="text/javascript">
+
+var lastLetters = [];
+var currentLang = 'nl';
+
+// --- Game mode ---
+var gameMode = false;
+var gameWordList = [];
+var gameWordIndex = 0;
+var gameTypedCount = 0;
+var nudgeTimer = null;
+var nudgeDelay = 5000; // ms between nudges
+var nudgeCount = 0; // tracks which nudge type to use
+var keyboardShowTimer = null; // timer for showing keyboard after delay
+
+// Keyboard rows for visual hint
+var kbRows = [
+    ['q','w','e','r','t','y','u','i','o','p'],
+    ['a','s','d','f','g','h','j','k','l'],
+    ['z','x','c','v','b','n','m']
+];
+
+var gameWords = {
+    nl: [
+        {word: 'kat', emoji: '🐱', sound: 'miaauw miaauw'}, {word: 'hond', emoji: '🐶', sound: 'woef woef woef'}, {word: 'vis', emoji: '🐟', sound: 'blub blub blub'},
+        {word: 'zon', emoji: '☀️'}, {word: 'maan', emoji: '🌙'}, {word: 'boom', emoji: '🌳'},
+        {word: 'auto', emoji: '🚗', sound: 'broem broem'}, {word: 'bal', emoji: '⚽', sound: 'boing'}, {word: 'boot', emoji: '🚢', sound: 'toet toet'},
+        {word: 'beer', emoji: '🐻', sound: 'raarw'}, {word: 'huis', emoji: '🏠'}, {word: 'ster', emoji: '⭐'},
+        {word: 'eend', emoji: '🦆', sound: 'kwak kwak kwak'}, {word: 'koe', emoji: '🐄', sound: 'boe boe'}, {word: 'poes', emoji: '🐈', sound: 'miaauw'},
+        {word: 'roos', emoji: '🌹'}, {word: 'taart', emoji: '🎂', sound: 'smak smak'}, {word: 'trein', emoji: '🚂', sound: 'toet toet tjoeke tjoeke'}
+    ],
+    en: [
+        {word: 'cat', emoji: '🐱', sound: 'meow meow'}, {word: 'dog', emoji: '🐶', sound: 'woof woof woof'}, {word: 'sun', emoji: '☀️'},
+        {word: 'moon', emoji: '🌙'}, {word: 'tree', emoji: '🌳'}, {word: 'car', emoji: '🚗', sound: 'vroom vroom'},
+        {word: 'ball', emoji: '⚽', sound: 'boing'}, {word: 'fish', emoji: '🐟', sound: 'blub blub blub'}, {word: 'bear', emoji: '🐻', sound: 'roarrr'},
+        {word: 'star', emoji: '⭐'}, {word: 'duck', emoji: '🦆', sound: 'quack quack quack'}, {word: 'cow', emoji: '🐄', sound: 'moooo'},
+        {word: 'rose', emoji: '🌹'}, {word: 'cake', emoji: '🎂', sound: 'yum yum'}, {word: 'boat', emoji: '🚢', sound: 'honk honk'},
+        {word: 'bee', emoji: '🐝', sound: 'bzzzzz'}, {word: 'hat', emoji: '🎩'}, {word: 'frog', emoji: '🐸', sound: 'ribbit ribbit'}
+    ],
+    de: [
+        {word: 'katze', emoji: '🐱', sound: 'miau miau'}, {word: 'hund', emoji: '🐶', sound: 'wau wau wau'}, {word: 'fisch', emoji: '🐟', sound: 'blub blub blub'},
+        {word: 'mond', emoji: '🌙'}, {word: 'baum', emoji: '🌳'}, {word: 'auto', emoji: '🚗', sound: 'brumm brumm'},
+        {word: 'ball', emoji: '⚽', sound: 'boing'}, {word: 'boot', emoji: '🚢', sound: 'tut tut'}, {word: 'haus', emoji: '🏠'},
+        {word: 'ente', emoji: '🦆', sound: 'quak quak quak'}, {word: 'kuh', emoji: '🐄', sound: 'muuuh'}, {word: 'rose', emoji: '🌹'},
+        {word: 'hase', emoji: '🐰'}, {word: 'brot', emoji: '🍞'}, {word: 'stern', emoji: '⭐'}
+    ],
+    fr: [
+        {word: 'chat', emoji: '🐱', sound: 'miaou miaou'}, {word: 'lune', emoji: '🌙'}, {word: 'auto', emoji: '🚗', sound: 'vroum vroum'},
+        {word: 'ours', emoji: '🐻', sound: 'grrrr'}, {word: 'rose', emoji: '🌹'}, {word: 'cake', emoji: '🎂'},
+        {word: 'arbre', emoji: '🌳'}, {word: 'lac', emoji: '🏞️'}, {word: 'oeuf', emoji: '🥚'},
+        {word: 'main', emoji: '✋'}, {word: 'nez', emoji: '👃'}, {word: 'pied', emoji: '🦶'}
+    ],
+    es: [
+        {word: 'gato', emoji: '🐱', sound: 'miau miau'}, {word: 'sol', emoji: '☀️'}, {word: 'luna', emoji: '🌙'},
+        {word: 'oso', emoji: '🐻', sound: 'grrrr'}, {word: 'pez', emoji: '🐟', sound: 'blub blub blub'}, {word: 'rosa', emoji: '🌹'},
+        {word: 'casa', emoji: '🏠'}, {word: 'tren', emoji: '🚂', sound: 'chu chu chu'}, {word: 'pato', emoji: '🦆', sound: 'cuac cuac cuac'},
+        {word: 'vaca', emoji: '🐄', sound: 'muuuu'}, {word: 'rana', emoji: '🐸', sound: 'croac croac'}, {word: 'pan', emoji: '🍞'}
+    ]
+};
+
+function shuffleArray(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+    return arr;
+}
+
+function toggleGameMode() {
+    gameMode = !gameMode;
+    var btn = document.getElementById('game-btn');
+    var gameUI = document.getElementById('game-ui');
+    if (gameMode) {
+        btn.classList.add('active');
+        buildKeyboard();
+        startNewGameRound();
+        gameUI.style.display = 'block';
+    } else {
+        btn.classList.remove('active');
+        gameUI.style.display = 'none';
+        clearNudgeTimer();
+        clearKeyboardShowTimer();
+        // Restore normal main text
+        var mainText = document.getElementById('main-text');
+        mainText.textContent = 'a';
+        mainText.style.fontSize = '';
+        mainText.style.color = 'white';
+    }
+}
+
+// --- Nudge timer: varied hints to remind the player ---
+function resetNudgeTimer() {
+    clearNudgeTimer();
+    nudgeCount = 0;
+    nudgeTimer = setTimeout(function doNudge() {
+        if (!gameMode || !gameWordList.length) return;
+        var entry = gameWordList[gameWordIndex];
+        if (!entry || gameTypedCount >= entry.word.length) return;
+        var expectedLetter = entry.word[gameTypedCount];
+        var keyEl = document.getElementById('kb-' + expectedLetter.toLowerCase());
+        var type = nudgeCount % 4;
+        nudgeCount++;
+
+        if (type === 0) {
+            // Nudge 1: grow the current game letter big
+            nudgeGrowLetter();
+        } else if (type === 1) {
+            // Nudge 2: wiggle the keyboard key
+            if (keyEl) {
+                keyEl.classList.remove('wiggle');
+                void keyEl.offsetWidth;
+                keyEl.classList.add('wiggle');
+            }
+        } else if (type === 2) {
+            // Nudge 3: flash the keyboard key a different color
+            nudgeFlashKey(keyEl);
+        } else {
+            // Nudge 4: speak the letter out loud + wiggle
+            speakLetter(expectedLetter);
+            if (keyEl) {
+                keyEl.classList.remove('wiggle');
+                void keyEl.offsetWidth;
+                keyEl.classList.add('wiggle');
+            }
+        }
+
+        // Schedule next nudge
+        nudgeTimer = setTimeout(doNudge, nudgeDelay);
+    }, nudgeDelay);
+}
+
+// Grow the current game letter temporarily
+function nudgeGrowLetter() {
+    var letters = document.querySelectorAll('.game-letter.current');
+    for (var i = 0; i < letters.length; i++) {
+        letters[i].classList.add('nudge-grow');
+        (function(el) {
+            setTimeout(function() { el.classList.remove('nudge-grow'); }, 1000);
+        })(letters[i]);
+    }
+}
+
+// Flash the keyboard key with a fun color
+function nudgeFlashKey(keyEl) {
+    if (!keyEl) return;
+    keyEl.classList.add('nudge-flash');
+    setTimeout(function() { keyEl.classList.remove('nudge-flash'); }, 1200);
+}
+
+function clearNudgeTimer() {
+    if (nudgeTimer) {
+        clearTimeout(nudgeTimer);
+        nudgeTimer = null;
+    }
+}
+
+function clearKeyboardShowTimer() {
+    if (keyboardShowTimer) {
+        clearTimeout(keyboardShowTimer);
+        keyboardShowTimer = null;
+    }
+}
+
+// --- On-screen keyboard for game mode ---
+function buildKeyboard() {
+    var kb = document.getElementById('game-keyboard');
+    kb.innerHTML = '';
+    for (var r = 0; r < kbRows.length; r++) {
+        var rowDiv = document.createElement('div');
+        rowDiv.className = 'kb-row';
+        for (var k = 0; k < kbRows[r].length; k++) {
+            var key = document.createElement('div');
+            key.className = 'kb-key';
+            key.id = 'kb-' + kbRows[r][k];
+            key.textContent = kbRows[r][k].toUpperCase();
+            rowDiv.appendChild(key);
+        }
+        kb.appendChild(rowDiv);
+    }
+}
+
+function highlightKey(letter) {
+    // Clear all highlights
+    var allKeys = document.querySelectorAll('.kb-key');
+    for (var i = 0; i < allKeys.length; i++) {
+        allKeys[i].classList.remove('kb-active');
+        allKeys[i].classList.remove('wiggle');
+    }
+    if (!letter) return;
+    var keyEl = document.getElementById('kb-' + letter.toLowerCase());
+    if (keyEl) {
+        keyEl.classList.add('kb-active');
+    }
+}
+
+function startNewGameRound() {
+    var words = gameWords[currentLang] || gameWords['en'];
+    gameWordList = shuffleArray(words.slice());
+    gameWordIndex = 0;
+    gameTypedCount = 0;
+    showCurrentGameWord();
+}
+
+function showCurrentGameWord() {
+    if (gameWordIndex >= gameWordList.length) {
+        // All words done, reshuffle
+        gameWordIndex = 0;
+        gameWordList = shuffleArray(gameWordList);
+    }
+    gameTypedCount = 0;
+    var entry = gameWordList[gameWordIndex];
+    renderGameWord(entry.word, 0);
+    // Show hint emoji small
+    var hintEl = document.getElementById('game-hint');
+    hintEl.textContent = entry.emoji;
+    hintEl.style.opacity = '0.6';
+    // Hide keyboard initially
+    var kbd = document.getElementById('game-keyboard');
+    kbd.style.opacity = '0';
+    // Schedule keyboard to appear after 5 seconds
+    clearKeyboardShowTimer();
+    keyboardShowTimer = setTimeout(function() {
+        if (!gameMode) return;
+        kbd.style.opacity = '1';
+        // Highlight first letter on keyboard after it's visible
+        highlightKey(entry.word[0]);
+    }, 5000);
+    // Speak the full word
+    speakWord(entry.word);
+    // Start nudge timer
+    resetNudgeTimer();
+}
+
+function speakWord(word) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        var lang = languages[currentLang];
+        setTimeout(function() {
+            doSpeak(word, lang.code);
+        }, 50);
+    }
+}
+
+function renderGameWord(word, typedCount) {
+    var container = document.getElementById('game-word');
+    container.innerHTML = '';
+    for (var i = 0; i < word.length; i++) {
+        var span = document.createElement('span');
+        span.className = 'game-letter';
+        span.textContent = word[i].toUpperCase();
+        if (i < typedCount) {
+            span.classList.add('typed');
+        } else if (i === typedCount) {
+            span.classList.add('current');
+        }
+        container.appendChild(span);
+    }
+}
+
+function handleGameKey(key) {
+    var entry = gameWordList[gameWordIndex];
+    var expectedLetter = entry.word[gameTypedCount];
+    if (key.toLowerCase() === expectedLetter.toLowerCase()) {
+        gameTypedCount++;
+        renderGameWord(entry.word, gameTypedCount);
+        // Speak the letter
+        speakLetter(key);
+        if (gameTypedCount >= entry.word.length) {
+            // Word complete! Show emoji reward with sound
+            clearNudgeTimer();
+            highlightKey(null);
+            showEmojiReward(entry.emoji, entry.word, entry.sound);
+        } else {
+            // Highlight next letter on keyboard
+            highlightKey(entry.word[gameTypedCount]);
+            resetNudgeTimer();
+        }
+        return true; // correct key
+    }
+    return false; // wrong key, ignore
+}
+
+function showEmojiReward(emoji, word, sound) {
+    var mainText = document.getElementById('main-text');
+    mainText.textContent = emoji;
+    mainText.style.fontSize = '40vmin';
+    mainText.classList.remove('bounce');
+    void mainText.offsetWidth;
+    mainText.classList.add('bounce');
+
+    // Create flying emoji particles
+    createEmojiParticles(emoji);
+    createScreenFlash();
+    createCenterRipple();
+
+    // Speak the word first, then the animal/object sound after
+    speakWord(word);
+    if (sound) {
+        setTimeout(function() { speakWord(sound); }, 900);
+    }
+
+    // Move to next word after a delay
+    setTimeout(function() {
+        if (!gameMode) return;
+        gameWordIndex++;
+        showCurrentGameWord();
+        mainText.style.fontSize = '';
+    }, 2500);
+}
+
+function createEmojiParticles(emoji) {
+    var numParticles = 16;
+    var centerX = window.innerWidth / 2;
+    var centerY = window.innerHeight / 2;
+    for (var i = 0; i < numParticles; i++) {
+        var p = document.createElement('div');
+        p.className = 'emoji-particle';
+        p.textContent = emoji;
+        p.style.left = centerX + 'px';
+        p.style.top = centerY + 'px';
+        p.style.fontSize = (30 + Math.random() * 40) + 'px';
+
+        var angle = (i / numParticles) * Math.PI * 2;
+        var distance = 120 + Math.random() * 180;
+        var tx = Math.cos(angle) * distance;
+        var ty = Math.sin(angle) * distance;
+        var rotate = Math.random() * 360 - 180;
+
+        p.style.setProperty('--tx', tx + 'px');
+        p.style.setProperty('--ty', ty + 'px');
+        p.style.setProperty('--rotate', rotate + 'deg');
+
+        document.body.appendChild(p);
+        (function(el) { setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 2000); })(p);
+    }
+}
+
+// Pastel colors for letter display and effects
+var pastelColors = [
+    '#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7',
+    '#C7CEEA', '#A0C4FF', '#BDB2FF', '#FFC6FF', '#FDFFB6',
+    '#CAFFBF', '#9BF6FF'
+];
+
+// --- Language pronunciation maps ---
+var languages = {
+    nl: {
+        code: 'nl-NL',
+        flag: '\uD83C\uDDF3\uD83C\uDDF1',
+        label: 'NL',
+        pronunciation: {
+            '0': 'nul', '1': 'een', '2': 'twee', '3': 'drie', '4': 'vier',
+            '5': 'vijf', '6': 'zes', '7': 'zeven', '8': 'acht', '9': 'negen',
+            'space': 'spatie', 'left': 'links', 'right': 'rechts', 'scroll': 'scroll'
+        }
+    },
+    en: {
+        code: 'en-US',
+        flag: '\uD83C\uDDEC\uD83C\uDDE7',
+        label: 'EN',
+        pronunciation: {
+            '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
+            '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine',
+            'space': 'space', 'left': 'left', 'right': 'right', 'scroll': 'scroll'
+        }
+    },
+    de: {
+        code: 'de-DE',
+        flag: '\uD83C\uDDE9\uD83C\uDDEA',
+        label: 'DE',
+        pronunciation: {
+            '0': 'null', '1': 'eins', '2': 'zwei', '3': 'drei', '4': 'vier',
+            '5': 'f\u00fcnf', '6': 'sechs', '7': 'sieben', '8': 'acht', '9': 'neun',
+            'space': 'Leertaste', 'left': 'links', 'right': 'rechts', 'scroll': 'scroll'
+        }
+    },
+    fr: {
+        code: 'fr-FR',
+        flag: '\uD83C\uDDEB\uD83C\uDDF7',
+        label: 'FR',
+        pronunciation: {
+            '0': 'z\u00e9ro', '1': 'un', '2': 'deux', '3': 'trois', '4': 'quatre',
+            '5': 'cinq', '6': 'six', '7': 'sept', '8': 'huit', '9': 'neuf',
+            'space': 'espace', 'left': 'gauche', 'right': 'droite', 'scroll': 'scroll'
+        }
+    },
+    es: {
+        code: 'es-ES',
+        flag: '\uD83C\uDDEA\uD83C\uDDF8',
+        label: 'ES',
+        pronunciation: {
+            '0': 'cero', '1': 'uno', '2': 'dos', '3': 'tres', '4': 'cuatro',
+            '5': 'cinco', '6': 'seis', '7': 'siete', '8': 'ocho', '9': 'nueve',
+            'space': 'espacio', 'left': 'izquierda', 'right': 'derecha', 'scroll': 'scroll'
+        }
+    }
+};
+
+window.onload = function () {
+    console.log("start");
+    document.body.style.backgroundColor = "#0000ff";
+    updateLangButtons();
+    updateControlsVisibility();
+}
+
+// --- Fullscreen ---
+function goFullscreen() {
+    var el = document.documentElement;
+    var promise;
+    if (el.requestFullscreen) { promise = el.requestFullscreen(); }
+    else if (el.webkitRequestFullscreen) { promise = el.webkitRequestFullscreen(); }
+    else if (el.msRequestFullscreen) { promise = el.msRequestFullscreen(); }
+    // Lock Escape key in fullscreen (Chrome/Edge)
+    if (promise && navigator.keyboard && navigator.keyboard.lock) {
+        promise.then(function() {
+            navigator.keyboard.lock(['Escape']);
+        }).catch(function() {});
+    }
+}
+
+function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+}
+
+function updateControlsVisibility() {
+    var controls = document.getElementById('controls');
+    if (controls) {
+        controls.style.display = isFullscreen() ? 'none' : 'flex';
+    }
+}
+
+document.addEventListener('fullscreenchange', updateControlsVisibility);
+document.addEventListener('webkitfullscreenchange', updateControlsVisibility);
+
+// --- Language selection ---
+function setLanguage(lang) {
+    currentLang = lang;
+    updateLangButtons();
+    if (gameMode) {
+        startNewGameRound();
+    }
+}
+
+function updateLangButtons() {
+    var btns = document.querySelectorAll('.lang-btn');
+    for (var i = 0; i < btns.length; i++) {
+        if (btns[i].getAttribute('data-lang') === currentLang) {
+            btns[i].classList.add('active');
+        } else {
+            btns[i].classList.remove('active');
+        }
+    }
+}
+
+// --- Speech ---
+function findVoice(langCode) {
+    var voices = window.speechSynthesis.getVoices();
+    var langPrefix = langCode.split('-')[0];
+    for (var v = 0; v < voices.length; v++) {
+        if (voices[v].lang.indexOf(langPrefix) === 0) {
+            return voices[v];
+        }
+    }
+    return null;
+}
+
+function doSpeak(text, langCode) {
+    var utterance = new SpeechSynthesisUtterance();
+    utterance.text = text;
+    utterance.lang = langCode;
+    utterance.rate = 0.7;
+    utterance.volume = 1.0;
+    utterance.pitch = 1.0;
+
+    var voice = findVoice(langCode);
+    if (voice) utterance.voice = voice;
+
+    window.speechSynthesis.speak(utterance);
+}
+
+function speakLetter(text) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        var lang = languages[currentLang];
+        var key = text.toLowerCase();
+
+        // Speak the letter or word as-is
+        var toSpeak = lang.pronunciation[key] || text;
+
+        setTimeout(function() {
+            doSpeak(toSpeak, lang.code);
+        }, 50);
+    }
+}
+
+// Preload voices
+if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+}
+
+// --- History (last 10 letters) ---
+function updateHistory(letter) {
+    lastLetters.push(letter);
+    if (lastLetters.length > 10) {
+        lastLetters.shift();
+    }
+    var historyEl = document.getElementById("history");
+    historyEl.innerHTML = "";
+    for (var i = 0; i < lastLetters.length; i++) {
+        var span = document.createElement("span");
+        span.className = "history-letter";
+        span.textContent = lastLetters[i];
+        span.style.animationDelay = (i * 0.05) + 's';
+        span.style.opacity = 1 - (i * 0.07);
+        // Give each letter its own pastel color
+        span.style.color = pastelColors[i % pastelColors.length];
+        historyEl.appendChild(span);
+    }
+}
+
+// --- Letter particle effects (letters flying out from center) ---
+function createLetterParticles(letter, color) {
+    var numParticles = 12;
+    var centerX = window.innerWidth / 2;
+    var centerY = window.innerHeight / 2;
+    for (var i = 0; i < numParticles; i++) {
+        var p = document.createElement('div');
+        p.className = 'letter-particle';
+        p.textContent = letter;
+        p.style.color = color;
+        p.style.left = centerX + 'px';
+        p.style.top = centerY + 'px';
+
+        var angle = (i / numParticles) * Math.PI * 2;
+        var distance = 150 + Math.random() * 100;
+        var tx = Math.cos(angle) * distance;
+        var ty = Math.sin(angle) * distance;
+        var rotate = Math.random() * 720 - 360;
+
+        p.style.setProperty('--tx', tx + 'px');
+        p.style.setProperty('--ty', ty + 'px');
+        p.style.setProperty('--rotate', rotate + 'deg');
+
+        document.body.appendChild(p);
+        (function(el) { setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1500); })(p);
+    }
+}
+
+// Screen flash on letter press
+function createScreenFlash() {
+    var flash = document.createElement('div');
+    flash.className = 'screen-flash';
+    document.body.appendChild(flash);
+    setTimeout(function() { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 500);
+}
+
+// Ripple from center on letter press
+function createCenterRipple() {
+    var ripple = document.createElement('div');
+    ripple.className = 'center-ripple';
+    var centerX = window.innerWidth / 2;
+    var centerY = window.innerHeight / 2;
+    ripple.style.left = (centerX - 150) + 'px';
+    ripple.style.top = (centerY - 150) + 'px';
+    document.body.appendChild(ripple);
+    setTimeout(function() { if (ripple.parentNode) ripple.parentNode.removeChild(ripple); }, 800);
+}
+
+// --- Click / tap burst animations (different per mouse button) ---
+
+// Left click: pastel confetti burst
+function spawnConfettiBurst(x, y) {
+    var particleCount = 20;
+    for (var i = 0; i < particleCount; i++) {
+        var p = document.createElement('div');
+        p.className = 'click-particle confetti';
+        var angle = (Math.PI * 2 / particleCount) * i + (Math.random() * 0.5);
+        var dist = 80 + Math.random() * 120;
+        var dx = Math.cos(angle) * dist;
+        var dy = Math.sin(angle) * dist;
+        var size = 8 + Math.random() * 14;
+        var shapes = ['50%', '3px', '0'];
+        p.style.width = size + 'px';
+        p.style.height = size * (0.5 + Math.random()) + 'px';
+        p.style.borderRadius = shapes[Math.floor(Math.random() * shapes.length)];
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        p.style.background = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+        p.style.setProperty('--dx', dx + 'px');
+        p.style.setProperty('--dy', dy + 'px');
+        document.body.appendChild(p);
+        (function(el) { setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1000); })(p);
+    }
+    // Double expanding ring
+    for (var r = 0; r < 2; r++) {
+        var ring = document.createElement('div');
+        ring.className = 'click-ring';
+        ring.style.left = x + 'px';
+        ring.style.top = y + 'px';
+        ring.style.borderColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+        ring.style.animationDelay = (r * 0.15) + 's';
+        document.body.appendChild(ring);
+        (function(el) { setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1000); })(ring);
+    }
+}
+
+// Middle click (scroll): spiral starburst
+function spawnSpiralBurst(x, y) {
+    var particleCount = 24;
+    for (var i = 0; i < particleCount; i++) {
+        var p = document.createElement('div');
+        p.className = 'click-particle spiral';
+        var angle = (Math.PI * 2 / particleCount) * i;
+        var dist = 100 + Math.random() * 80;
+        var dx = Math.cos(angle) * dist;
+        var dy = Math.sin(angle) * dist;
+        var size = 6 + Math.random() * 10;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        p.style.background = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+        p.style.setProperty('--dx', dx + 'px');
+        p.style.setProperty('--dy', dy + 'px');
+        p.style.animationDelay = (i * 0.03) + 's';
+        document.body.appendChild(p);
+        (function(el) { setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1200); })(p);
+    }
+    // Star flash at center
+    var star = document.createElement('div');
+    star.className = 'star-flash';
+    star.style.left = x + 'px';
+    star.style.top = y + 'px';
+    document.body.appendChild(star);
+    setTimeout(function() { if (star.parentNode) star.parentNode.removeChild(star); }, 800);
+}
+
+// Right click: firework fountain upward
+function spawnFirework(x, y) {
+    var particleCount = 30;
+    for (var i = 0; i < particleCount; i++) {
+        var p = document.createElement('div');
+        p.className = 'click-particle firework';
+        // Mostly upward with spread
+        var angle = -Math.PI/2 + (Math.random() - 0.5) * Math.PI * 0.8;
+        var dist = 100 + Math.random() * 150;
+        var dx = Math.cos(angle) * dist;
+        var dy = Math.sin(angle) * dist;
+        var size = 6 + Math.random() * 12;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.borderRadius = '50%';
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        p.style.background = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+        p.style.setProperty('--dx', dx + 'px');
+        p.style.setProperty('--dy', dy + 'px');
+        p.style.animationDelay = (Math.random() * 0.2) + 's';
+        document.body.appendChild(p);
+        (function(el) { setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1400); })(p);
+    }
+    // Triple rings
+    for (var r = 0; r < 3; r++) {
+        var ring = document.createElement('div');
+        ring.className = 'click-ring';
+        ring.style.left = x + 'px';
+        ring.style.top = y + 'px';
+        ring.style.borderColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+        ring.style.animationDelay = (r * 0.12) + 's';
+        document.body.appendChild(ring);
+        (function(el) { setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1200); })(ring);
+    }
+}
+
+// Generic burst for touch
+function spawnBurst(x, y) {
+    spawnConfettiBurst(x, y);
+}
+
+// --- Core display function ---
+function doCoolStuff(event) {
+    var randomColor = Math.floor(Math.random()*16777215).toString(16);
+    while (randomColor.length < 6) { randomColor = "0" + randomColor; }
+    var textToDisplay = event.key;
+    if(textToDisplay == " ") { textToDisplay = "space"; }
+    if(textToDisplay == "Alt") { textToDisplay = "alt"; }
+    if(textToDisplay == "Control") { textToDisplay = "ctrl"; }
+    if(textToDisplay == "Meta") { textToDisplay = "win"; }
+
+    document.body.style.backgroundColor = "#"+randomColor;
+
+    // Game mode: check if the pressed key matches the expected letter
+    if (gameMode && textToDisplay.length === 1) {
+        var correct = handleGameKey(textToDisplay);
+        if (!correct) {
+            // Wrong key — shake the game word display
+            var gameWord = document.getElementById('game-word');
+            gameWord.classList.remove('shake');
+            void gameWord.offsetWidth;
+            gameWord.classList.add('shake');
+        }
+        updateHistory(textToDisplay);
+        return;
+    }
+
+    // In game mode, ignore special keys (don't speak left/right/alt/ctrl/space etc.)
+    if (gameMode) {
+        return;
+    }
+
+    var mainText = document.getElementById("main-text");
+    mainText.textContent = textToDisplay;
+
+    // Auto-shrink long words so they fit on screen
+    if (textToDisplay.length > 3) {
+        mainText.style.fontSize = '18vmin';
+    } else if (textToDisplay.length > 1) {
+        mainText.style.fontSize = '28vmin';
+    } else {
+        mainText.style.fontSize = '';
+    }
+
+    // Pastel color for the main letter
+    var letterColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+    mainText.style.color = letterColor;
+
+    // Trigger bounce animation
+    mainText.classList.remove('bounce');
+    void mainText.offsetWidth; // force reflow
+    mainText.classList.add('bounce');
+
+    // Letter particle effects
+    createLetterParticles(textToDisplay, letterColor);
+    createScreenFlash();
+    createCenterRipple();
+
+    speakLetter(textToDisplay);
+    updateHistory(textToDisplay);
+
+    return;
+}
+
+// --- Event listeners ---
+
+// Keyboard
+document.addEventListener("keypress", function onEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    doCoolStuff(event);
+});
+
+// Mouse clicks — different effect per button
+document.addEventListener("mousedown", function onEvent(event) {
+    if (event.target.closest && event.target.closest('#controls')) return;
+    switch (event.button) {
+        case 0: spawnConfettiBurst(event.clientX, event.clientY); break;
+        case 1: spawnSpiralBurst(event.clientX, event.clientY); break;
+        case 2: spawnFirework(event.clientX, event.clientY); break;
+        default: spawnConfettiBurst(event.clientX, event.clientY); break;
+    }
+});
+document.addEventListener("mouseup", function onEvent(event) {
+    if (event.target.closest && event.target.closest('#controls')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    switch (event.button) {
+        case 0: event.key = "left"; break;
+        case 1: event.key = "scroll"; break;
+        case 2: event.key = "right"; break;
+        default: event.key = "??"; break;
+    }
+    doCoolStuff(event);
+});
+
+// Touch taps — show burst on mobile
+document.addEventListener("touchstart", function onEvent(event) {
+    if (event.target.closest && event.target.closest('#controls')) return;
+    var touch = event.touches[0];
+    if (touch) {
+        spawnBurst(touch.clientX, touch.clientY);
+    }
+}, { passive: true });
+
+// Right-click prevention
+document.addEventListener('contextmenu', function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
+}, false);
+
+// Block Escape, F11 only when in fullscreen
+document.onkeydown = function(event) {
+    if (isFullscreen()) {
+        if (event.key === "Escape" || event.keyCode === 27) {
+            event.preventDefault();
+            event.stopPropagation();
+            setTimeout(goFullscreen, 100);
+            return false;
+        }
+        if (event.key === "F11" || event.keyCode === 122) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+    }
+    if (event.altKey || event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        event.stopPropagation();
+        doCoolStuff(event);
+    }
+}
+
+document.onkeyup = function(event) {
+    if (event.altKey || event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+}
+
+// Prevent all selection attempts
+document.addEventListener('selectstart', function(e) { e.preventDefault(); });
+document.addEventListener('dragstart', function(e) { e.preventDefault(); });
+
+// Rainbow mouse trail
+window.addEventListener("mousemove", function (e) {
+	var to_append = document.getElementsByClassName('loader-container')[0];
+
+	var parent_div = document.createElement('div');
+	parent_div.className = "loader-container";
+	var inner_div = document.createElement('div');
+	inner_div.className = "loader";
+	parent_div.appendChild(inner_div)
+	var d = document.body.appendChild(parent_div);
+
+	parent_div.style.left = (e.clientX - 50)+'px';
+	parent_div.style.top = (e.clientY - 50)+'px';
+
+	if(document.getElementsByClassName('loader-container').length > 50) {
+		document.body.removeChild(to_append)
+	}
+});
+
+// Touch move rainbow trail for mobile
+window.addEventListener("touchmove", function (e) {
+	e.preventDefault();
+	var touch = e.touches[0];
+	var to_append = document.getElementsByClassName('loader-container')[0];
+
+	var parent_div = document.createElement('div');
+	parent_div.className = "loader-container";
+	var inner_div = document.createElement('div');
+	inner_div.className = "loader";
+	parent_div.appendChild(inner_div);
+	document.body.appendChild(parent_div);
+
+	parent_div.style.left = (touch.clientX - 50)+'px';
+	parent_div.style.top = (touch.clientY - 50)+'px';
+
+	if(document.getElementsByClassName('loader-container').length > 50) {
+		document.body.removeChild(to_append);
+	}
+}, { passive: false });
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css?family=Paytone+One');
+
+/* === Global selection prevention === */
+*, *::before, *::after {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    height: 100%;
+    margin: 0px auto;
+    cursor: none;
+    overflow: hidden;
+    touch-action: none;
+    background: #060a19;
+    width: 100%;
+    font-family: 'Paytone One', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+}
+
+[contenteditable]:focus {
+    outline: 0px solid transparent;
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    margin: 0px auto;
+    padding: 0px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#main span#main-text {
+    color: white;
+    display: block;
+    text-align: center;
+    font-weight: bold;
+    font-size: 35vmin;
+    line-height: 1;
+    margin: 0px auto;
+    padding: 0px;
+    text-shadow:
+        0 0 20px rgba(255, 255, 255, 0.5),
+        0 0 40px rgba(255, 255, 255, 0.3),
+        5px 5px 10px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    text-transform: uppercase;
+}
+
+/* Bounce + glow animation for main letter */
+@keyframes bounce {
+    0% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.3) rotate(-5deg); }
+    50% { transform: scale(1.15) rotate(5deg); }
+    75% { transform: scale(1.25) rotate(-3deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes gentleGlow {
+    0%, 100% {
+        text-shadow:
+            0 0 30px rgba(255, 255, 255, 0.6),
+            0 0 60px rgba(255, 200, 200, 0.4),
+            5px 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        text-shadow:
+            0 0 50px rgba(255, 255, 255, 0.9),
+            0 0 100px rgba(200, 200, 255, 0.6),
+            5px 5px 15px rgba(0, 0, 0, 0.2);
+    }
+}
+
+#main-text.bounce {
+    animation: bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55), gentleGlow 3s ease-in-out infinite;
+}
+
+/* === History bar (bottom center, glassmorphism) === */
+#history-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    pointer-events: none;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+#history {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    min-height: 50px;
+}
+
+.history-letter {
+    font-size: 7vmin;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    min-width: 7vmin;
+    text-align: center;
+    text-transform: uppercase;
+    animation: historyFadeIn 0.3s ease-in forwards;
+}
+
+@keyframes historyFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* === Letter particles (flying out from center) === */
+.letter-particle {
+    position: fixed;
+    pointer-events: none;
+    font-size: 8vmin;
+    font-weight: bold;
+    font-family: 'Paytone One', sans-serif;
+    text-transform: uppercase;
+    z-index: 100;
+    animation: letterParticleFly 1.5s ease-out forwards;
+}
+
+@keyframes letterParticleFly {
+    0% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.2) rotate(var(--rotate));
+        opacity: 0;
+    }
+}
+
+/* === Screen flash === */
+.screen-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 50;
+    animation: flash 0.5s ease-out;
+}
+
+@keyframes flash {
+    0% {
+        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.4) 0%, transparent 60%);
+    }
+    100% {
+        background: transparent;
+    }
+}
+
+/* === Center ripple === */
+.center-ripple {
+    position: fixed;
+    border-radius: 50%;
+    border: 4px solid white;
+    pointer-events: none;
+    z-index: 75;
+    animation: centerRippleExpand 0.8s ease-out forwards;
+}
+
+@keyframes centerRippleExpand {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 1;
+    }
+    100% {
+        width: 300px;
+        height: 300px;
+        opacity: 0;
+    }
+}
+
+/* === Click burst particles (at cursor) === */
+.click-particle {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%) scale(1);
+    animation: particleFly 1s ease-out forwards;
+}
+
+.click-particle.confetti {
+    animation: confettiFly 1s ease-out forwards;
+}
+
+.click-particle.spiral {
+    animation: spiralFly 1.1s ease-out forwards;
+}
+
+.click-particle.firework {
+    animation: fireworkFly 1.3s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes particleFly {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0);
+        opacity: 0;
+    }
+}
+
+@keyframes confettiFly {
+    0% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    60% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.3) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+@keyframes spiralFly {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    30% {
+        transform: translate(-50%, -50%) scale(1.5) rotate(180deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0) rotate(540deg);
+        opacity: 0;
+    }
+}
+
+@keyframes fireworkFly {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) - 40px)) scale(0.2);
+        opacity: 0;
+    }
+}
+
+/* === Click expanding ring === */
+.click-ring {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 4px solid white;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%) scale(1);
+    animation: ringExpand 0.8s ease-out forwards;
+}
+
+@keyframes ringExpand {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(14);
+        opacity: 0;
+    }
+}
+
+/* Star flash for middle click */
+.star-flash {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    pointer-events: none;
+    z-index: 9997;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,200,0.5) 30%, transparent 70%);
+    border-radius: 50%;
+    animation: starFlash 0.8s ease-out forwards;
+}
+
+@keyframes starFlash {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(3);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(5);
+        opacity: 0;
+    }
+}
+
+/* === Controls bar (language + fullscreen) === */
+#controls {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px;
+    cursor: default;
+    pointer-events: auto;
+}
+
+#controls button {
+    border: none;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.15s;
+    pointer-events: auto;
+    color: white;
+}
+
+#controls button:hover {
+    background: rgba(255,255,255,0.25);
+}
+
+#controls button:active {
+    transform: scale(0.9);
+}
+
+#controls .lang-btn.active {
+    background: rgba(255,255,255,0.35);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+}
+
+.controls-sep {
+    width: 1px;
+    height: 24px;
+    background: rgba(255,255,255,0.25);
+    margin: 0 2px;
+}
+
+#fs-btn {
+    padding: 6px !important;
+}
+
+/*
+Rainbow Mouse Trail (using dom elements)
+Marjo Sobrecaray
+https://codepen.io/maaarj/pen/YZReoK
+*/
+
+.loader-container {
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  -moz-animation: scaleUp 0.5s linear;
+  -webkit-animation: scaleUp 0.5s linear;
+  animation: scaleUp 0.5s linear;
+  -moz-transform: scale(0);
+  -ms-transform: scale(0);
+  -webkit-transform: scale(0);
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+.loader-container .loader {
+  background: #ff0c0c;
+  background: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4gPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkIiBncmFkaWVudFVuaXRzPSJvYmplY3RCb3VuZGluZ0JveCIgeDE9Ii0wLjAzOTYxNCIgeTE9IjAuOTUyNzkiIHgyPSIxLjAzOTYxNCIgeTI9IjAuMDQ3MjEiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmZjBjMGMiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMyMWQ0MDAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyYWQpIiAvPjwvc3ZnPiA=');
+  background: -moz-linear-gradient(40deg, #ff0c0c, #21d400);
+  background: -webkit-linear-gradient(40deg, #ff0c0c, #21d400);
+  background: linear-gradient(50deg, #ff0c0c, #21d400);
+  border-radius: 10px;
+  -webkit-filter: hue-rotate(0deg);
+  filter: hue-rotate(0deg);
+  animation: filterHue 2.5s linear infinite;
+  height: 100%;
+  width: 100%;
+  transform: rotate(0deg);
+  pointer-events: none;
+}
+.loader-container .loader::after {
+  content: '';
+  position: absolute;
+  height: 80px;
+  width: 80px;
+  left: 10px;
+  top: 10px;
+  border-radius: 100%;
+}
+
+@keyframes filterHue {
+  50% {
+    -webkit-filter: hue-rotate(1000deg);
+    filter: hue-rotate(1000deg);
+  }
+  100% {
+    -webkit-filter: hue-rotate(2000deg);
+    filter: hue-rotate(2000deg);
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scaleUp {
+  50% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.25);
+  }
+}
+
+/* === Game mode UI === */
+#game-ui {
+    position: fixed;
+    top: 8vh;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1500;
+    text-align: center;
+    pointer-events: none;
+}
+
+#game-hint {
+    font-size: 15vmin;
+    line-height: 1.1;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+}
+
+#game-word {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+}
+
+.game-letter {
+    font-family: 'Paytone One', sans-serif;
+    font-size: 10vmin;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.25);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    transition: color 0.3s, transform 0.3s, text-shadow 0.3s;
+    text-transform: uppercase;
+}
+
+.game-letter.typed {
+    color: #CAFFBF;
+    text-shadow: 0 0 15px rgba(202, 255, 191, 0.6), 2px 2px 4px rgba(0,0,0,0.2);
+    transform: scale(1.1);
+}
+
+.game-letter.current {
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.7), 2px 2px 4px rgba(0,0,0,0.2);
+    animation: currentPulse 1s ease-in-out infinite;
+}
+
+@keyframes currentPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-12px); }
+    40% { transform: translateX(12px); }
+    60% { transform: translateX(-8px); }
+    80% { transform: translateX(8px); }
+}
+
+#game-word.shake {
+    animation: shake 0.4s ease-out;
+}
+
+/* Emoji particles for game reward */
+.emoji-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 100;
+    animation: emojiParticleFly 2s ease-out forwards;
+}
+
+@keyframes emojiParticleFly {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.2) rotate(var(--rotate));
+        opacity: 0;
+    }
+}
+
+/* === On-screen keyboard (game mode) === */
+#game-keyboard {
+    margin-top: 3vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.5s ease-in;
+}
+
+.kb-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.kb-key {
+    width: 7vmin;
+    height: 7vmin;
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Paytone One', sans-serif;
+    font-size: 3vmin;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.kb-key.kb-active {
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.25);
+    border-color: rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 18px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.2);
+    transform: scale(1.25);
+    animation: keyPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes keyPulse {
+    0%, 100% {
+        transform: scale(1.25);
+        box-shadow: 0 0 18px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.2);
+    }
+    50% {
+        transform: scale(1.35);
+        box-shadow: 0 0 28px rgba(255, 215, 0, 0.7), 0 0 60px rgba(255, 215, 0, 0.3);
+    }
+}
+
+@keyframes wiggle {
+    0%, 100% { transform: scale(1.25) rotate(0deg); }
+    15% { transform: scale(1.4) rotate(-12deg); }
+    30% { transform: scale(1.4) rotate(12deg); }
+    45% { transform: scale(1.35) rotate(-8deg); }
+    60% { transform: scale(1.35) rotate(8deg); }
+    75% { transform: scale(1.3) rotate(-4deg); }
+    90% { transform: scale(1.3) rotate(4deg); }
+}
+
+.kb-key.wiggle {
+    animation: wiggle 0.6s ease-out, keyPulse 1.2s ease-in-out infinite 0.6s;
+}
+
+/* Nudge: grow the current game letter big */
+@keyframes nudgeGrow {
+    0% { transform: scale(1); }
+    30% { transform: scale(2); }
+    60% { transform: scale(1.8); }
+    100% { transform: scale(1); }
+}
+
+.game-letter.current.nudge-grow {
+    animation: nudgeGrow 1s ease-in-out;
+    color: #FF9AA2;
+    text-shadow: 0 0 30px rgba(255, 154, 162, 0.8), 0 0 60px rgba(255, 154, 162, 0.4);
+}
+
+/* Nudge: flash keyboard key with rainbow color */
+@keyframes nudgeFlash {
+    0% { background: rgba(255, 215, 0, 0.25); }
+    20% { background: rgba(255, 100, 100, 0.5); transform: scale(1.4); }
+    40% { background: rgba(100, 255, 100, 0.5); transform: scale(1.3); }
+    60% { background: rgba(100, 200, 255, 0.5); transform: scale(1.4); }
+    80% { background: rgba(200, 100, 255, 0.5); transform: scale(1.3); }
+    100% { background: rgba(255, 215, 0, 0.25); transform: scale(1.25); }
+}
+
+.kb-key.nudge-flash {
+    animation: nudgeFlash 1.2s ease-in-out;
+}
+
+#game-btn.active {
+    background: rgba(255,255,255,0.35);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    #main span#main-text {
+        font-size: 30vmin;
+    }
+    .history-letter {
+        font-size: 6vmin;
+        min-width: 6vmin;
+    }
+    #history-bar {
+        bottom: 10px;
+        padding: 10px 15px;
+    }
+    .game-letter {
+        font-size: 8vmin;
+        gap: 8px;
+    }
+    #game-hint {
+        font-size: 12vmin;
+    }
+    .kb-key {
+        width: 8vmin;
+        height: 8vmin;
+        font-size: 3.5vmin;
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    #main span#main-text {
+        font-size: 25vmin;
+    }
+    .history-letter {
+        font-size: 5vmin;
+        min-width: 5vmin;
+    }
+    .game-letter {
+        font-size: 7vmin;
+    }
+    #game-hint {
+        font-size: 10vmin;
+    }
+    .kb-key {
+        width: 9vmin;
+        height: 9vmin;
+        min-width: 26px;
+        min-height: 26px;
+        font-size: 3.5vmin;
+        border-radius: 7px;
+        gap: 3px;
+    }
+    .kb-row {
+        gap: 3px;
+    }
+    #game-keyboard {
+        gap: 4px;
+    }
+}
+</style>
+</head>
+<body style="background:#000;">
+    <div id="main">
+        <span id="main-text">a</span>
+    </div>
+
+    <!-- History bar (bottom center) showing last 10 typed letters -->
+    <div id="history-bar">
+        <div id="history"></div>
+    </div>
+
+    <!-- Game mode UI (shown above center when game is active) -->
+    <div id="game-ui" style="display:none;">
+        <div id="game-hint"></div>
+        <div id="game-word"></div>
+        <div id="game-keyboard"></div>
+    </div>
+
+    <!-- Controls: language + fullscreen — only visible when NOT fullscreen -->
+    <div id="controls">
+        <button class="lang-btn" data-lang="nl" onclick="setLanguage('nl')" title="Nederlands">&#x1F1F3;&#x1F1F1;</button>
+        <button class="lang-btn" data-lang="en" onclick="setLanguage('en')" title="English">&#x1F1EC;&#x1F1E7;</button>
+        <button class="lang-btn" data-lang="de" onclick="setLanguage('de')" title="Deutsch">&#x1F1E9;&#x1F1EA;</button>
+        <button class="lang-btn" data-lang="fr" onclick="setLanguage('fr')" title="Fran&ccedil;ais">&#x1F1EB;&#x1F1F7;</button>
+        <button class="lang-btn" data-lang="es" onclick="setLanguage('es')" title="Espa&ntilde;ol">&#x1F1EA;&#x1F1F8;</button>
+        <span class="controls-sep"></span>
+        <button id="game-btn" onclick="toggleGameMode()" title="Word Game">&#x1F3AE;</button>
+        <span class="controls-sep"></span>
+        <button id="fs-btn" onclick="goFullscreen()" title="Fullscreen">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+                <polyline points="21 3 14 10"></polyline>
+                <polyline points="3 21 10 14"></polyline>
+            </svg>
+        </button>
+    </div>
+</body>
+</html>
