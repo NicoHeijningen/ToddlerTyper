@@ -82,16 +82,23 @@ function toggleGameMode() {
     gameMode = !gameMode;
     var btn = document.getElementById('game-btn');
     var gameUI = document.getElementById('game-ui');
+    var gameInput = document.getElementById('game-input');
     if (gameMode) {
         btn.classList.add('active');
         buildKeyboard();
         startNewGameRound();
         gameUI.style.display = 'block';
+        // Focus hidden input to bring up mobile keyboard and capture input
+        setTimeout(function() {
+            gameInput.focus();
+        }, 100);
     } else {
         btn.classList.remove('active');
         gameUI.style.display = 'none';
         clearNudgeTimer();
         clearKeyboardShowTimer();
+        gameInput.blur();
+        gameInput.value = '';
         // Restore normal main text
         var mainText = document.getElementById('main-text');
         mainText.textContent = 'a';
@@ -839,6 +846,29 @@ document.addEventListener("keypress", function onEvent(event) {
     event.preventDefault();
     event.stopPropagation();
     doCoolStuff(event);
+});
+
+// Game mode input handling for both desktop keyboard and mobile input
+var gameInput = document.getElementById('game-input');
+gameInput.addEventListener('input', function(event) {
+    if (!gameMode) return;
+    var input = gameInput.value;
+    if (input.length > 0) {
+        var char = input[input.length - 1];
+        // Create a synthetic event with the character
+        var syntheticEvent = { key: char };
+        doCoolStuff(syntheticEvent);
+        gameInput.value = '';
+    }
+});
+
+// Keep input focused to maintain mobile keyboard visibility
+gameInput.addEventListener('blur', function() {
+    if (gameMode) {
+        setTimeout(function() {
+            gameInput.focus();
+        }, 50);
+    }
 });
 
 // Mouse clicks — different effect per button
@@ -1685,6 +1715,9 @@ https://codepen.io/maaarj/pen/YZReoK
         <div id="game-word"></div>
         <div id="game-keyboard"></div>
     </div>
+
+    <!-- Hidden input for mobile keyboard support -->
+    <input id="game-input" type="text" inputmode="none" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;">
 
     <!-- Controls: language + fullscreen — only visible when NOT fullscreen -->
     <div id="controls">
