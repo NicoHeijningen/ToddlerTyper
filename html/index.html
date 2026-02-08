@@ -111,10 +111,19 @@ function toggleGameMode() {
 function resetNudgeTimer() {
     clearNudgeTimer();
     nudgeCount = 0;
-    nudgeTimer = setTimeout(function doNudge() {
+    scheduleNextNudge();
+}
+
+function scheduleNextNudge() {
+    if (!gameMode || !gameWordList.length) return;
+    var entry = gameWordList[gameWordIndex];
+    if (!entry || gameTypedCount >= entry.word.length) return;
+    
+    nudgeTimer = setTimeout(function() {
         if (!gameMode || !gameWordList.length) return;
         var entry = gameWordList[gameWordIndex];
         if (!entry || gameTypedCount >= entry.word.length) return;
+        
         var expectedLetter = entry.word[gameTypedCount];
         var keyEl = document.getElementById('kb-' + expectedLetter.toLowerCase());
         var type = nudgeCount % 4;
@@ -141,7 +150,7 @@ function resetNudgeTimer() {
         }
 
         // Schedule next nudge
-        nudgeTimer = setTimeout(doNudge, nudgeDelay);
+        scheduleNextNudge();
     }, nudgeDelay);
 }
 
