@@ -32,6 +32,10 @@ A colorful, interactive typing game for toddlers and young children. Watch big b
 - **⛶ Button** - Full screen
 - **Left/Right/Scroll Click** - Particle effects
 
+## Browser Notes
+
+💡 **Chrome provides the best text-to-speech experience** with natural-sounding voices and better pronunciation across all supported languages. Firefox's TTS engine is more basic and may have less natural-sounding output.
+
 ## Development
 
 Built with vanilla HTML5, CSS, and JavaScript. No dependencies needed!
