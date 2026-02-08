@@ -275,6 +275,10 @@ function handleGameKey(key) {
     if (key.toLowerCase() === expectedLetter.toLowerCase()) {
         gameTypedCount++;
         renderGameWord(entry.word, gameTypedCount);
+        // Hide keyboard when correct key pressed
+        var kbd = document.getElementById('game-keyboard');
+        kbd.style.opacity = '0';
+        clearKeyboardShowTimer();
         // Speak the letter
         speakLetter(key);
         if (gameTypedCount >= entry.word.length) {
@@ -363,7 +367,7 @@ var languages = {
         pronunciation: {
             '0': 'nul', '1': 'een', '2': 'twee', '3': 'drie', '4': 'vier',
             '5': 'vijf', '6': 'zes', '7': 'zeven', '8': 'acht', '9': 'negen',
-            'space': 'spatie', 'left': 'links', 'right': 'rechts', 'scroll': 'scroll'
+            'space': 'spatie', 'left': 'links', 'right': 'rechts', 'scroll': 'scrollen'
         }
     },
     en: {
@@ -373,7 +377,7 @@ var languages = {
         pronunciation: {
             '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
             '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine',
-            'space': 'space', 'left': 'left', 'right': 'right', 'scroll': 'scroll'
+            'space': 'space', 'left': 'left', 'right': 'right', 'scroll': 'scrolling'
         }
     },
     de: {
@@ -383,7 +387,7 @@ var languages = {
         pronunciation: {
             '0': 'null', '1': 'eins', '2': 'zwei', '3': 'drei', '4': 'vier',
             '5': 'f\u00fcnf', '6': 'sechs', '7': 'sieben', '8': 'acht', '9': 'neun',
-            'space': 'Leertaste', 'left': 'links', 'right': 'rechts', 'scroll': 'scroll'
+            'space': 'Leertaste', 'left': 'links', 'right': 'rechts', 'scroll': 'scrollen'
         }
     },
     fr: {
@@ -393,7 +397,7 @@ var languages = {
         pronunciation: {
             '0': 'z\u00e9ro', '1': 'un', '2': 'deux', '3': 'trois', '4': 'quatre',
             '5': 'cinq', '6': 'six', '7': 'sept', '8': 'huit', '9': 'neuf',
-            'space': 'espace', 'left': 'gauche', 'right': 'droite', 'scroll': 'scroll'
+            'space': 'espace', 'left': 'gauche', 'right': 'droite', 'scroll': 'd\u00e9filement'
         }
     },
     es: {
@@ -403,7 +407,7 @@ var languages = {
         pronunciation: {
             '0': 'cero', '1': 'uno', '2': 'dos', '3': 'tres', '4': 'cuatro',
             '5': 'cinco', '6': 'seis', '7': 'siete', '8': 'ocho', '9': 'nueve',
-            'space': 'espacio', 'left': 'izquierda', 'right': 'derecha', 'scroll': 'scroll'
+            'space': 'espacio', 'left': 'izquierda', 'right': 'derecha', 'scroll': 'desplazamiento'
         }
     }
 };
@@ -735,6 +739,14 @@ function doCoolStuff(event) {
     // Pastel color for the main letter
     var letterColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
     mainText.style.color = letterColor;
+
+    // Translate mouse button names to the current language
+    var displayText = textToDisplay;
+    if (textToDisplay === 'left' || textToDisplay === 'right' || textToDisplay === 'scroll') {
+        var lang = languages[currentLang];
+        displayText = lang.pronunciation[textToDisplay] || textToDisplay;
+    }
+    mainText.textContent = displayText;
 
     // Trigger bounce animation
     mainText.classList.remove('bounce');
