@@ -420,6 +420,66 @@ var languages = {
     }
 };
 
+// --- Nudge System (encouragement hints during gameplay) ---
+function resetNudgeTimer() {
+    clearNudgeTimer();
+    nudgeCount = 0;
+    nudgeTimer = setInterval(function() {
+        if (!gameMode) {
+            clearNudgeTimer();
+            return;
+        }
+        var entry = gameWordList[gameWordIndex];
+        var currentLetter = document.querySelector('.game-letter.current');
+        var currentKey = document.querySelector('.kb-key.kb-active');
+        
+        // Cycle through 4 nudge types
+        switch(nudgeCount) {
+            case 0: // Grow the current letter
+                if (currentLetter) {
+                    currentLetter.classList.remove('nudge-grow');
+                    void currentLetter.offsetWidth; // Trigger reflow
+                    currentLetter.classList.add('nudge-grow');
+                }
+                break;
+            case 1: // Wiggle the keyboard key
+                if (currentKey) {
+                    currentKey.classList.remove('wiggle');
+                    void currentKey.offsetWidth;
+                    currentKey.classList.add('wiggle');
+                }
+                break;
+            case 2: // Flash the keyboard key with colors
+                if (currentKey) {
+                    currentKey.classList.remove('nudge-flash');
+                    void currentKey.offsetWidth;
+                    currentKey.classList.add('nudge-flash');
+                }
+                break;
+            case 3: // Fireworks at center
+                spawnFirework(window.innerWidth / 2, window.innerHeight / 2);
+                break;
+        }
+        nudgeCount = (nudgeCount + 1) % 4;
+    }, nudgeDelay);
+}
+
+function clearNudgeTimer() {
+    if (nudgeTimer) {
+        clearInterval(nudgeTimer);
+        nudgeTimer = null;
+    }
+    // Remove any active nudge animations
+    var letters = document.querySelectorAll('.game-letter.nudge-grow');
+    for (var i = 0; i < letters.length; i++) {
+        letters[i].classList.remove('nudge-grow');
+    }
+    var keys = document.querySelectorAll('.kb-key.wiggle, .kb-key.nudge-flash');
+    for (var i = 0; i < keys.length; i++) {
+        keys[i].classList.remove('wiggle', 'nudge-flash');
+    }
+}
+
 window.onload = function () {
     console.log("start");
     document.body.style.backgroundColor = "#0000ff";
