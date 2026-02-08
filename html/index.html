@@ -82,16 +82,25 @@ function toggleGameMode() {
     gameMode = !gameMode;
     var btn = document.getElementById('game-btn');
     var gameUI = document.getElementById('game-ui');
+    var gameInput = document.getElementById('game-input');
     if (gameMode) {
         btn.classList.add('active');
         buildKeyboard();
         startNewGameRound();
         gameUI.style.display = 'block';
+        gameInput.style.display = 'block';
+        // Focus input to capture keyboard input
+        setTimeout(function() {
+            gameInput.focus();
+        }, 100);
     } else {
         btn.classList.remove('active');
         gameUI.style.display = 'none';
+        gameInput.style.display = 'none';
         clearNudgeTimer();
         clearKeyboardShowTimer();
+        gameInput.blur();
+        gameInput.value = '';
         // Restore normal main text
         var mainText = document.getElementById('main-text');
         mainText.textContent = 'a';
@@ -191,25 +200,6 @@ function buildKeyboard() {
             key.className = 'kb-key';
             key.id = 'kb-' + kbRows[r][k];
             key.textContent = kbRows[r][k].toUpperCase();
-            key.style.cursor = 'pointer';
-            key.style.pointerEvents = 'auto';
-            // Add click handler for mobile/touch support
-            (function(letter) {
-                key.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (gameMode) {
-                        handleGameKey(letter);
-                    }
-                });
-                key.addEventListener('touchend', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (gameMode) {
-                        handleGameKey(letter);
-                    }
-                }, { passive: false });
-            })(kbRows[r][k]);
             rowDiv.appendChild(key);
         }
         kb.appendChild(rowDiv);
@@ -876,6 +866,29 @@ document.addEventListener("keypress", function onEvent(event) {
     event.stopPropagation();
     doCoolStuff(event);
 });
+
+// Handle game input from text field
+var gameInput = document.getElementById('game-input');
+if (gameInput) {
+    gameInput.addEventListener('input', function(e) {
+        if (!gameMode) return;
+        var value = gameInput.value;
+        if (value.length > 0) {
+            var lastChar = value[value.length - 1];
+            handleGameKey(lastChar);
+            gameInput.value = '';
+        }
+    });
+    
+    // Keep input focused during game
+    gameInput.addEventListener('blur', function() {
+        if (gameMode) {
+            setTimeout(function() {
+                gameInput.focus();
+            }, 50);
+        }
+    });
+}
 
 // Mouse clicks — different effect per button
 document.addEventListener("mousedown", function onEvent(event) {
@@ -1551,7 +1564,6 @@ https://codepen.io/maaarj/pen/YZReoK
     gap: 6px;
     opacity: 0;
     transition: opacity 0.5s ease-in;
-    pointer-events: auto;
 }
 
 .kb-row {
@@ -1577,19 +1589,6 @@ https://codepen.io/maaarj/pen/YZReoK
     border-radius: 10px;
     transition: all 0.3s ease;
     text-transform: uppercase;
-    cursor: pointer;
-    user-select: none;
-}
-
-.kb-key:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
-}
-
-.kb-key:active {
-    transform: scale(0.95);
-    background: rgba(255, 255, 255, 0.2);
 }
 
 .kb-key.kb-active {
@@ -1735,6 +1734,9 @@ https://codepen.io/maaarj/pen/YZReoK
         <div id="game-word"></div>
         <div id="game-keyboard"></div>
     </div>
+
+    <!-- Text input field for keyboard input during game -->
+    <input id="game-input" type="text" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:200px;padding:10px;font-size:16px;border:2px solid white;border-radius:5px;background:rgba(0,0,0,0.5);color:white;text-align:center;z-index:1000;">
 
     <!-- Controls: language + fullscreen — only visible when NOT fullscreen -->
     <div id="controls">
