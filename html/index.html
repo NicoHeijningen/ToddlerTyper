@@ -1551,6 +1551,7 @@ https://codepen.io/maaarj/pen/YZReoK
     gap: 6px;
     opacity: 0;
     transition: opacity 0.5s ease-in;
+    pointer-events: auto;
 }
 
 .kb-row {
@@ -1576,6 +1577,19 @@ https://codepen.io/maaarj/pen/YZReoK
     border-radius: 10px;
     transition: all 0.3s ease;
     text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+}
+
+.kb-key:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.kb-key:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .kb-key.kb-active {
