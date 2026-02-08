@@ -1,4 +1,4 @@
-# ToddlerTyper �
+# ToddlerTyper 🌈
 
 A colorful, interactive typing game for toddlers and young children. Watch big bouncing letters, hear sounds, and enjoy spectacular animations!
 

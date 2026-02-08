@@ -302,6 +302,14 @@ function handleGameKey(key) {
             highlightKey(null);
             showEmojiReward(entry.emoji, entry.word, entry.sound);
         } else {
+            // Schedule keyboard to appear again after 5 seconds for next letter
+            keyboardShowTimer = setTimeout(function() {
+                if (!gameMode) return;
+                var currentEntry = gameWordList[gameWordIndex];
+                if (!currentEntry || gameTypedCount >= currentEntry.word.length) return;
+                kbd.style.opacity = '1';
+                highlightKey(currentEntry.word[gameTypedCount]);
+            }, 5000);
             // Highlight next letter on keyboard
             highlightKey(entry.word[gameTypedCount]);
             resetNudgeTimer();
