@@ -304,6 +304,9 @@ function handleGameKey(key) {
             highlightKey(null);
             showEmojiReward(entry.emoji, entry.word, entry.sound);
         } else {
+            // Show temporary emoji feedback for correct letter, then clear it
+            showTemporaryEmoji(entry.emoji);
+            
             // Schedule keyboard to appear again after 5 seconds for next letter
             keyboardShowTimer = setTimeout(function() {
                 if (!gameMode) return;
@@ -356,6 +359,24 @@ function showEmojiReward(emoji, word, sound) {
         showCurrentGameWord();
         mainText.style.fontSize = '';
     }, 2500);
+}
+
+function showTemporaryEmoji(emoji) {
+    var mainText = document.getElementById('main-text');
+    mainText.textContent = emoji;
+    mainText.style.fontSize = '25vmin';
+    mainText.classList.remove('bounce');
+    void mainText.offsetWidth; // trigger reflow
+    mainText.classList.add('bounce');
+    
+    // Clear emoji after 2 seconds, before keyboard appears
+    setTimeout(function() {
+        if (gameMode) {
+            mainText.classList.remove('bounce');
+            mainText.textContent = '';
+            mainText.style.fontSize = '';
+        }
+    }, 2000);
 }
 
 function createEmojiParticles(emoji) {
