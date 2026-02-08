@@ -1262,6 +1262,7 @@ html, body {
 
 .lang-btn {
     font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif !important;
+    padding: 2px !important;
 }
 
 #controls .lang-btn.active {
@@ -1615,13 +1616,47 @@ https://codepen.io/maaarj/pen/YZReoK
 
     <!-- Controls: language + fullscreen — only visible when NOT fullscreen -->
     <div id="controls">
-        <button class="lang-btn" data-lang="nl" onclick="setLanguage('nl')" title="Nederlands">🇳🇱</button>
-        <button class="lang-btn" data-lang="en" onclick="setLanguage('en')" title="English">🇬🇧</button>
-        <button class="lang-btn" data-lang="de" onclick="setLanguage('de')" title="Deutsch">🇩🇪</button>
-        <button class="lang-btn" data-lang="fr" onclick="setLanguage('fr')" title="Français">🇫🇷</button>
-        <button class="lang-btn" data-lang="es" onclick="setLanguage('es')" title="Español">🇪🇸</button>
+        <button class="lang-btn" data-lang="nl" onclick="setLanguage('nl')" title="Nederlands">
+            <svg viewBox="0 0 36 24" width="20" height="20" fill="none" preserveAspectRatio="xMidYMid meet">
+                <rect width="36" height="8" fill="#AE1C28"/>
+                <rect y="8" width="36" height="8" fill="#FFF"/>
+                <rect y="16" width="36" height="8" fill="#33A1FD"/>
+            </svg>
+        </button>
+        <button class="lang-btn" data-lang="en" onclick="setLanguage('en')" title="English">
+            <svg viewBox="0 0 60 30" width="20" height="20" fill="none" preserveAspectRatio="xMidYMid meet">
+                <clipPath id="s"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
+                <clipPath id="t"><path d="M30,15 h30 v15 z v-15 h-30 z h-30 v-15 z v15 h30 z"/></clipPath>
+                <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+                <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+                <path d="M0,0 L60,30 M60,0 L0,30" stroke="#c8102e" stroke-width="4" clip-path="url(#t)"/>
+                <path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>
+                <path d="M30,0 v30 M0,15 h60" stroke="#c8102e" stroke-width="6"/>
+            </svg>
+        </button>
+        <button class="lang-btn" data-lang="de" onclick="setLanguage('de')" title="Deutsch">
+            <svg viewBox="0 0 5 3" width="20" height="20" fill="none" preserveAspectRatio="xMidYMid meet">
+                <rect width="5" height="1" fill="#000"/>
+                <rect y="1" width="5" height="1" fill="#D00"/>
+                <rect y="2" width="5" height="1" fill="#FFCE00"/>
+            </svg>
+        </button>
+        <button class="lang-btn" data-lang="fr" onclick="setLanguage('fr')" title="Français">
+            <svg viewBox="0 0 3 2" width="20" height="20" fill="none" preserveAspectRatio="xMidYMid meet">
+                <rect width="1" height="2" fill="#002395"/>
+                <rect x="1" width="1" height="2" fill="#FFF"/>
+                <rect x="2" width="1" height="2" fill="#ED2939"/>
+            </svg>
+        </button>
+        <button class="lang-btn" data-lang="es" onclick="setLanguage('es')" title="Español">
+            <svg viewBox="0 0 3 2" width="20" height="20" fill="none" preserveAspectRatio="xMidYMid meet">
+                <rect width="3" height="0.5" fill="#C60B1E"/>
+                <rect y="0.5" width="3" height="1" fill="#FFC400"/>
+                <rect y="1.5" width="3" height="0.5" fill="#C60B1E"/>
+            </svg>
+        </button>
         <span class="controls-sep"></span>
-        <button id="game-btn" onclick="toggleGameMode()" title="Word Game">&#x1F3AE;</button>
+        <button id="game-btn" onclick="toggleGameMode()" title="Word Game">🎮</button>
         <span class="controls-sep"></span>
         <button id="fs-btn" onclick="goFullscreen()" title="Fullscreen">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
