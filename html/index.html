@@ -82,16 +82,22 @@ function toggleGameMode() {
     gameMode = !gameMode;
     var btn = document.getElementById('game-btn');
     var gameUI = document.getElementById('game-ui');
+    var mobileInput = document.getElementById('mobile-input');
     if (gameMode) {
         btn.classList.add('active');
         buildKeyboard();
         startNewGameRound();
         gameUI.style.display = 'block';
+        // Focus mobile input to bring up keyboard on mobile devices
+        setTimeout(function() {
+            mobileInput.focus();
+        }, 100);
     } else {
         btn.classList.remove('active');
         gameUI.style.display = 'none';
         clearNudgeTimer();
         clearKeyboardShowTimer();
+        mobileInput.blur();
         // Restore normal main text
         var mainText = document.getElementById('main-text');
         mainText.textContent = 'a';
@@ -839,6 +845,28 @@ document.addEventListener("keypress", function onEvent(event) {
     event.preventDefault();
     event.stopPropagation();
     doCoolStuff(event);
+});
+
+// Handle mobile input for game mode
+var mobileInput = document.getElementById('mobile-input');
+mobileInput.addEventListener('input', function(event) {
+    if (!gameMode) return;
+    var text = mobileInput.value;
+    if (text.length > 0) {
+        var lastChar = text[text.length - 1];
+        handleGameKey(lastChar);
+        mobileInput.value = ''; // Clear input after handling
+    }
+});
+
+// Keep mobile input focused during game mode
+mobileInput.addEventListener('blur', function() {
+    if (gameMode) {
+        // Re-focus after a short delay to keep keyboard visible
+        setTimeout(function() {
+            mobileInput.focus();
+        }, 50);
+    }
 });
 
 // Mouse clicks — different effect per button
@@ -1685,6 +1713,9 @@ https://codepen.io/maaarj/pen/YZReoK
         <div id="game-word"></div>
         <div id="game-keyboard"></div>
     </div>
+
+    <!-- Hidden input to capture mobile keyboard events -->
+    <input id="mobile-input" type="text" style="position: fixed; left: -9999px; opacity: 0; pointer-events: none;">
 
     <!-- Controls: language + fullscreen — only visible when NOT fullscreen -->
     <div id="controls">
