@@ -885,6 +885,11 @@ window.addEventListener("touchmove", function (e) {
 <style>
 @import url('https://fonts.googleapis.com/css?family=Paytone+One');
 
+/* === Emoji font support for proper rendering === */
+body, button, .lang-btn {
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Paytone One', sans-serif;
+}
+
 /* === Global selection prevention === */
 *, *::before, *::after {
     -webkit-touch-callout: none;
@@ -1244,6 +1249,7 @@ html, body {
     transition: background 0.15s, transform 0.15s;
     pointer-events: auto;
     color: white;
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
 }
 
 #controls button:hover {
@@ -1252,6 +1258,10 @@ html, body {
 
 #controls button:active {
     transform: scale(0.9);
+}
+
+.lang-btn {
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif !important;
 }
 
 #controls .lang-btn.active {
