@@ -127,13 +127,10 @@ function resetNudgeTimer() {
             // Nudge 3: flash the keyboard key a different color
             nudgeFlashKey(keyEl);
         } else {
-            // Nudge 4: speak the letter out loud + wiggle
-            speakLetter(expectedLetter);
-            if (keyEl) {
-                keyEl.classList.remove('wiggle');
-                void keyEl.offsetWidth;
-                keyEl.classList.add('wiggle');
-            }
+            // Nudge 4: fireworks animation at center
+            var centerX = window.innerWidth / 2;
+            var centerY = window.innerHeight / 2;
+            spawnFirework(centerX, centerY);
         }
 
         // Schedule next nudge
