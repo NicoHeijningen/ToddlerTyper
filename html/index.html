@@ -21,6 +21,7 @@ var nudgeTimer = null;
 var nudgeDelay = 5000; // ms between nudges
 var nudgeCount = 0; // tracks which nudge type to use
 var keyboardShowTimer = null; // timer for showing keyboard after delay
+var wrongKeyCount = 0; // tracks wrong key presses in current word
 
 // Keyboard rows for visual hint
 var kbRows = [
@@ -222,6 +223,8 @@ function showCurrentGameWord() {
     var hintEl = document.getElementById('game-hint');
     hintEl.textContent = entry.emoji;
     hintEl.style.opacity = '0.6';
+    // Reset wrong key counter for new word
+    wrongKeyCount = 0;
     // Hide keyboard initially
     var kbd = document.getElementById('game-keyboard');
     kbd.style.opacity = '0';
@@ -288,6 +291,15 @@ function handleGameKey(key) {
             resetNudgeTimer();
         }
         return true; // correct key
+    }
+    // Wrong key pressed - increment counter
+    wrongKeyCount++;
+    // Show keyboard after 3 wrong attempts as a hint
+    if (wrongKeyCount >= 3) {
+        var kbd = document.getElementById('game-keyboard');
+        kbd.style.opacity = '1';
+        highlightKey(expectedLetter);
+        clearKeyboardShowTimer();
     }
     return false; // wrong key, ignore
 }
