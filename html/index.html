@@ -5,7 +5,7 @@
 <title>ToddlerTyper</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌈</text></svg>">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="description" content="ToddlerTyper is a fun and colorful typing game for young children. Press keys to see big letters bounce on the screen, hear sounds, and watch cool animations. Practice letters and simple words while having fun with colors and emojis." />
 <script type="text/javascript">
 
@@ -936,9 +936,17 @@ if (gameInput) {
     });
 }
 
+document.addEventListener('pointerdown', function(event) {
+    if (!gameMode) return;
+    if (event.target.closest && (event.target.closest('#controls') || event.target.closest('#game-input'))) return;
+    if (gameInput) {
+        gameInput.focus();
+    }
+});
+
 // Mouse clicks — different effect per button
 document.addEventListener("mousedown", function onEvent(event) {
-    if (event.target.closest && event.target.closest('#controls')) return;
+    if (event.target.closest && (event.target.closest('#controls') || event.target.closest('#game-input'))) return;
     switch (event.button) {
         case 0: spawnConfettiBurst(event.clientX, event.clientY); break;
         case 1: spawnSpiralBurst(event.clientX, event.clientY); break;
@@ -947,7 +955,7 @@ document.addEventListener("mousedown", function onEvent(event) {
     }
 });
 document.addEventListener("mouseup", function onEvent(event) {
-    if (event.target.closest && event.target.closest('#controls')) return;
+    if (event.target.closest && (event.target.closest('#controls') || event.target.closest('#game-input'))) return;
     event.preventDefault();
     event.stopPropagation();
     switch (event.button) {
@@ -961,7 +969,7 @@ document.addEventListener("mouseup", function onEvent(event) {
 
 // Touch taps — show burst on mobile
 document.addEventListener("touchstart", function onEvent(event) {
-    if (event.target.closest && event.target.closest('#controls')) return;
+    if (event.target.closest && (event.target.closest('#controls') || event.target.closest('#game-input'))) return;
     var touch = event.touches[0];
     if (touch) {
         spawnBurst(touch.clientX, touch.clientY);
@@ -1069,7 +1077,8 @@ body, button, .lang-btn {
 }
 
 html, body {
-    height: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
     margin: 0px auto;
     cursor: none;
     overflow: hidden;
@@ -1085,7 +1094,7 @@ html, body {
 
 #main {
     width: 100%;
-    height: 100%;
+    height: 100dvh;
     margin: 0px auto;
     padding: 0px;
     display: flex;
@@ -1704,6 +1713,27 @@ https://codepen.io/maaarj/pen/YZReoK
     box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
 }
 
+#game-input {
+    display: none;
+    position: fixed;
+    left: 50%;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(80vw, 260px);
+    padding: 8px 10px;
+    font-size: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    color: white;
+    text-align: center;
+    z-index: 2600;
+    box-sizing: border-box;
+    outline: none;
+    pointer-events: auto;
+    touch-action: manipulation;
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
     #main span#main-text {
@@ -1729,6 +1759,9 @@ https://codepen.io/maaarj/pen/YZReoK
         height: 8vmin;
         font-size: 3.5vmin;
         border-radius: 8px;
+    }
+    #game-input {
+        bottom: calc(84px + env(safe-area-inset-bottom));
     }
 }
 
@@ -1782,7 +1815,7 @@ https://codepen.io/maaarj/pen/YZReoK
     </div>
 
     <!-- Text input field for keyboard input during game -->
-    <input id="game-input" type="text" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:80vw;max-width:200px;padding:8px;font-size:16px;border:2px solid white;border-radius:5px;background:rgba(0,0,0,0.5);color:white;text-align:center;z-index:1000;box-sizing:border-box;">
+    <input id="game-input" type="text" inputmode="text" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Typing input">
 
     <!-- Controls: language + fullscreen — only visible when NOT fullscreen -->
     <div id="controls">
