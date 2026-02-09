@@ -26,6 +26,26 @@ var wrongKeyCount = 0; // tracks wrong key presses in current word
 // --- Mobile viewport sizing ---
 // Use VisualViewport when available so fixed-position UI stays visible when the
 // browser UI / on-screen keyboard changes the visual viewport size.
+var baseInnerHeight = window.innerHeight;
+
+function updateKeyboardRaise(vvBottom) {
+    var root = document.documentElement;
+    var active = document.activeElement;
+    var isNarrow = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+    if (!isNarrow || !active || active.id !== 'game-input') {
+        root.style.setProperty('--kb-raise', '0px');
+        return;
+    }
+    var innerDelta = Math.max(0, baseInnerHeight - window.innerHeight);
+    if (vvBottom < 1 && innerDelta < 80) {
+        // Conservative raise for overlay keyboards.
+        var raise = Math.round(Math.min(baseInnerHeight * 0.45, 360));
+        root.style.setProperty('--kb-raise', raise + 'px');
+    } else {
+        root.style.setProperty('--kb-raise', '0px');
+    }
+}
+
 function updateViewportVars() {
     var vv = window.visualViewport;
     var height = vv ? vv.height : window.innerHeight;
@@ -33,9 +53,16 @@ function updateViewportVars() {
     if (vv) {
         bottomInset = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
     }
+    // Keep a "max" baseline so we can infer keyboard overlays on browsers that
+    // don't resize the viewport when the keyboard appears.
+    var active = document.activeElement;
+    if (!active || active.id !== 'game-input') {
+        baseInnerHeight = Math.max(baseInnerHeight, window.innerHeight);
+    }
     var root = document.documentElement;
     root.style.setProperty('--app-height', height + 'px');
     root.style.setProperty('--vv-bottom', bottomInset + 'px');
+    updateKeyboardRaise(bottomInset);
 }
 
 updateViewportVars();
@@ -233,8 +260,17 @@ function bindGameInput() {
         gameInput.value = '';
     });
 
+    gameInput.addEventListener('focus', function() {
+        // Run a few times to catch any delayed viewport updates / keyboard overlays.
+        document.documentElement.style.setProperty('--kb-raise', '0px');
+        setTimeout(updateViewportVars, 50);
+        setTimeout(updateViewportVars, 250);
+        setTimeout(updateViewportVars, 450);
+    });
+
     // Keep input focused during game (so soft keyboard stays open).
     gameInput.addEventListener('blur', function() {
+        document.documentElement.style.setProperty('--kb-raise', '0px');
         if (gameMode) {
             setTimeout(function() {
                 gameInput.focus();
@@ -632,8 +668,8 @@ function updateControlsVisibility() {
     }
 }
 
-document.addEventListener('fullscreenchange', updateControlsVisibility);
-document.addEventListener('webkitfullscreenchange', updateControlsVisibility);
+document.addEventListener('fullscreenchange', function() { updateControlsVisibility(); updateViewportVars(); });
+document.addEventListener('webkitfullscreenchange', function() { updateControlsVisibility(); updateViewportVars(); });
 
 // --- Language selection ---
 function setLanguage(lang) {
@@ -713,6 +749,9 @@ function updateHistory(letter) {
         var span = document.createElement("span");
         span.className = "history-letter";
         span.textContent = lastLetters[i];
+        if (String(lastLetters[i]).length > 1) {
+            span.className += " keycap";
+        }
         span.style.animationDelay = (i * 0.05) + 's';
         span.style.opacity = 1 - (i * 0.07);
         // Give each letter its own pastel color
@@ -887,8 +926,10 @@ function doCoolStuff(event) {
     var textToDisplay = event.key;
     if(textToDisplay == " ") { textToDisplay = "space"; }
     if(textToDisplay == "Alt") { textToDisplay = "alt"; }
+    if(textToDisplay == "AltGraph") { textToDisplay = "alt"; }
     if(textToDisplay == "Control") { textToDisplay = "ctrl"; }
     if(textToDisplay == "Meta") { textToDisplay = "win"; }
+    if(textToDisplay == "OS") { textToDisplay = "win"; }
 
     document.body.style.backgroundColor = "#"+randomColor;
 
@@ -906,8 +947,11 @@ function doCoolStuff(event) {
         return;
     }
 
-    // In game mode, ignore special keys (don't speak left/right/alt/ctrl/space etc.)
+    // In game mode, ignore special keys for gameplay, but still show them in history.
     if (gameMode) {
+        if (textToDisplay === 'ctrl' || textToDisplay === 'alt' || textToDisplay === 'win' || textToDisplay === 'space') {
+            updateHistory(textToDisplay);
+        }
         return;
     }
 
@@ -1089,6 +1133,7 @@ window.addEventListener("touchmove", function (e) {
 :root {
     --app-height: 100dvh;
     --vv-bottom: 0px;
+    --kb-raise: 0px;
 }
 
 /* === Emoji font support for proper rendering === */
@@ -1182,13 +1227,13 @@ html, body {
 /* === History bar (bottom center, glassmorphism) === */
 #history-bar {
     position: fixed;
-    bottom: calc(20px + env(safe-area-inset-bottom) + var(--vv-bottom));
+    bottom: calc(20px + env(safe-area-inset-bottom) + var(--vv-bottom) + var(--kb-raise));
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
     pointer-events: auto;
     /* Size to fit up to 10 big letters (but never exceed the viewport). */
-    width: min(96vw, calc(70vmin + 112px));
+    width: min(96vw, calc(70vmin + 150px));
 }
 
 #history {
@@ -1197,22 +1242,39 @@ html, body {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     padding: 12px 20px;
     box-sizing: border-box;
     pointer-events: none;
     z-index: 2;
+    overflow: hidden;
 }
 
 .history-letter {
     font-size: 7vmin;
     font-weight: bold;
     color: white;
+    line-height: 1;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     min-width: 7vmin;
     text-align: center;
     text-transform: uppercase;
     animation: historyFadeIn 0.3s ease-in forwards;
+}
+
+.history-letter.keycap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(12px, 3.4vmin, 22px);
+    min-width: auto;
+    padding: 0.25em 0.55em;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.18);
+    border: 2px solid rgba(255, 255, 255, 0.22);
 }
 
 @keyframes historyFadeIn {
@@ -1748,7 +1810,7 @@ https://codepen.io/maaarj/pen/YZReoK
     display: block;
     position: relative;
     width: 100%;
-    min-height: calc(7vmin + 24px);
+    min-height: calc(8vmin + 28px);
     padding: 12px 20px;
     font-size: 16px; /* prevent iOS zoom */
     border: 2px solid rgba(255, 255, 255, 0.3);
@@ -1779,6 +1841,18 @@ https://codepen.io/maaarj/pen/YZReoK
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
+    #controls {
+        top: calc(12px + env(safe-area-inset-top));
+        right: calc(12px + env(safe-area-inset-right));
+        bottom: auto;
+        left: auto;
+        padding: 6px 8px;
+        gap: 5px;
+    }
+    #game-ui {
+        /* Keep room for the top-right controls bar. */
+        top: max(64px, 10vh);
+    }
     #main span#main-text {
         font-size: 30vmin;
     }
@@ -1787,13 +1861,14 @@ https://codepen.io/maaarj/pen/YZReoK
         min-width: 6vmin;
     }
     #history-bar {
-        bottom: calc(10px + env(safe-area-inset-bottom) + var(--vv-bottom));
+        bottom: calc(10px + env(safe-area-inset-bottom) + var(--vv-bottom) + var(--kb-raise));
     }
     #history {
+        gap: 6px;
         padding: 10px 15px;
     }
     #game-input {
-        min-height: calc(6vmin + 20px);
+        min-height: calc(7vmin + 24px);
         padding: 10px 15px;
     }
     .game-letter {
@@ -1801,7 +1876,7 @@ https://codepen.io/maaarj/pen/YZReoK
         gap: 8px;
     }
     #game-hint {
-        font-size: 12vmin;
+        font-size: 10vmin;
     }
     .kb-key {
         width: 8vmin;
@@ -1819,8 +1894,11 @@ https://codepen.io/maaarj/pen/YZReoK
         font-size: 5vmin;
         min-width: 5vmin;
     }
+    #history {
+        gap: 4px;
+    }
     #game-input {
-        min-height: calc(5vmin + 20px);
+        min-height: calc(6vmin + 22px);
     }
     .game-letter {
         font-size: 7vmin;
