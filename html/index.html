@@ -26,7 +26,7 @@ var wrongKeyCount = 0; // tracks wrong key presses in current word
 // --- Mobile viewport sizing ---
 // Use VisualViewport when available so fixed-position UI stays visible when the
 // browser UI / on-screen keyboard changes the visual viewport size.
-var baseInnerHeight = window.innerHeight;
+var baseInnerHeight = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
 
 function updateKeyboardRaise(vvBottom) {
     var root = document.documentElement;
@@ -36,14 +36,41 @@ function updateKeyboardRaise(vvBottom) {
         root.style.setProperty('--kb-raise', '0px');
         return;
     }
-    var innerDelta = Math.max(0, baseInnerHeight - window.innerHeight);
-    if (vvBottom < 1 && innerDelta < 80) {
-        // Conservative raise for overlay keyboards.
-        var raise = Math.round(Math.min(baseInnerHeight * 0.45, 360));
-        root.style.setProperty('--kb-raise', raise + 'px');
-    } else {
-        root.style.setProperty('--kb-raise', '0px');
+
+    var bar = document.getElementById('history-bar');
+    if (bar) {
+        // Try to raise only as much as needed to keep the bar inside the visual viewport.
+        var vv = window.visualViewport;
+        // getBoundingClientRect() is in *visual* viewport coordinates, so compare
+        // against visualViewport.height (not height+offsetTop).
+        var visibleBottom = vv ? vv.height : window.innerHeight;
+        var currentRaise = parseFloat(getComputedStyle(root).getPropertyValue('--kb-raise')) || 0;
+        var rect = bar.getBoundingClientRect();
+
+        // Removing kb-raise would move the bar DOWN by currentRaise.
+        var baselineBottom = rect.bottom + currentRaise;
+        // Prefer a bigger gap above the keyboard so the bar isn't glued to it.
+        // Using ~half the bar height gives a consistent feel across devices.
+        var margin = Math.max(20, Math.round(20 + rect.height * 0.5));
+        var needed = Math.max(0, Math.ceil(baselineBottom - (visibleBottom - margin)));
+
+        if (needed > 0) {
+            var maxRaise = Math.round(Math.min(baseInnerHeight * 0.45, 420));
+            root.style.setProperty('--kb-raise', Math.min(maxRaise, needed) + 'px');
+            return;
+        }
     }
+
+    // Fallback for overlay keyboards that don't update visualViewport metrics.
+    var currentH = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
+    var innerDelta = Math.max(0, baseInnerHeight - currentH);
+    if (!window.visualViewport && vvBottom < 1 && innerDelta < 240) {
+        var fallbackRaise = Math.round(Math.min(baseInnerHeight * 0.45, 420));
+        root.style.setProperty('--kb-raise', fallbackRaise + 'px');
+        return;
+    }
+
+    root.style.setProperty('--kb-raise', '0px');
 }
 
 function updateViewportVars() {
@@ -51,13 +78,17 @@ function updateViewportVars() {
     var height = vv ? vv.height : window.innerHeight;
     var bottomInset = 0;
     if (vv) {
-        bottomInset = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+        // Use layout viewport height as the reference so this works with overlay
+        // keyboards (where window.innerHeight may match vv.height).
+        var layoutH = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
+        bottomInset = Math.max(0, layoutH - (vv.height + vv.offsetTop));
     }
     // Keep a "max" baseline so we can infer keyboard overlays on browsers that
     // don't resize the viewport when the keyboard appears.
     var active = document.activeElement;
     if (!active || active.id !== 'game-input') {
-        baseInnerHeight = Math.max(baseInnerHeight, window.innerHeight);
+        var currentH = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
+        baseInnerHeight = Math.max(baseInnerHeight, currentH);
     }
     var root = document.documentElement;
     root.style.setProperty('--app-height', height + 'px');
@@ -1233,7 +1264,7 @@ html, body {
     z-index: 1000;
     pointer-events: auto;
     /* Size to fit up to 10 big letters (but never exceed the viewport). */
-    width: min(96vw, calc(70vmin + 150px));
+    width: min(98vw, calc(70vmin + 220px));
 }
 
 #history {
