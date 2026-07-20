@@ -316,16 +316,11 @@ test.describe('On-screen keyboard', () => {
 
   test('keyboard starts hidden then shows after timeout', async ({ page }) => {
     await load(page);
-    const opBefore = await page.locator('#game-keyboard').evaluate(
-      el => getComputedStyle(el).opacity
-    );
-    expect(opBefore).toBe('0');
+    // Keyboard begins fully transparent.
+    await expect(page.locator('#game-keyboard')).toHaveCSS('opacity', '0');
 
-    await page.waitForTimeout(5500);
-    const opAfter = await page.locator('#game-keyboard').evaluate(
-      el => getComputedStyle(el).opacity
-    );
-    expect(opAfter).toBe('1');
+    // After the 5s reveal timer (and 0.5s fade) it becomes fully visible.
+    await expect(page.locator('#game-keyboard')).toHaveCSS('opacity', '1', { timeout: 8000 });
   });
 
   test('keyboard shows after 3 wrong keys', async ({ page }) => {
@@ -341,10 +336,8 @@ test.describe('On-screen keyboard', () => {
       doCoolStuff({ key: wrong });
     });
 
-    const opacity = await page.locator('#game-keyboard').evaluate(
-      el => getComputedStyle(el).opacity
-    );
-    expect(opacity).toBe('1');
+    // opacity is set to 1 but fades in over a 0.5s CSS transition; poll until it settles.
+    await expect(page.locator('#game-keyboard')).toHaveCSS('opacity', '1', { timeout: 5000 });
   });
 });
 
