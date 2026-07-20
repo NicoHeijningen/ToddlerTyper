@@ -1,0 +1,19 @@
+{
+  "name": "julia-typen",
+  "version": "1.0.0",
+  "description": "A colorful, interactive typing game for toddlers and young children. Watch big bouncing letters, hear sounds, and enjoy spectacular animations!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:41729/git/NicoHeijningen/julia-typen"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
+  }
+}
