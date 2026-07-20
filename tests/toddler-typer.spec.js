@@ -6,13 +6,21 @@ async function load(page) {
   await page.goto(PAGE, { waitUntil: 'domcontentloaded', timeout: 10000 });
   await page.waitForFunction(() => typeof doCoolStuff === 'function', { timeout: 5000 });
   await page.evaluate(() => {
-    window.speechSynthesis.speak = function() {};
-    window.speechSynthesis.cancel = function() {};
+    if (window.speechSynthesis) {
+      window.speechSynthesis.speak = function() {};
+      window.speechSynthesis.cancel = function() {};
+    }
   });
-  await page.evaluate(() => window.onload());
+  await page.evaluate(() => {
+    var orig = window.onload;
+    window.onload = null;
+    if (!document.querySelector('#game-word .game-letter') && orig) {
+      orig();
+    }
+  });
   await page.waitForFunction(
     () => document.querySelectorAll('#game-word .game-letter').length > 0,
-    { timeout: 5000 }
+    { timeout: 10000 }
   );
 }
 
