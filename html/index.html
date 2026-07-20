@@ -1260,9 +1260,18 @@ html, body {
     cursor: none;
     overflow: hidden;
     touch-action: none;
-    background: #060a19;
     width: 100%;
     font-family: 'Paytone One', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+}
+
+/* Fallback color on the root only (paints behind #rainbow-bg). The body must
+   stay transparent, otherwise its background paints over the negative z-index
+   rainbow layer and hides it (seen on Chrome/Android). */
+html {
+    background: #060a19;
+}
+body {
+    background: transparent;
 }
 
 #rainbow-bg {
