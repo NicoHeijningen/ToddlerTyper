@@ -211,11 +211,80 @@ test.describe('Piano and emoji effects', () => {
     await expect(page.locator('.floating-emoji')).toHaveCount(0);
   });
 
-  test('piano audio context is created on keypress', async ({ page }) => {
+  test('piano audio context is created on keypress in normal mode', async ({ page }) => {
     await load(page);
-    await typeInGame(page, 'a');
+    await page.evaluate(() => toggleGameMode());
+    await page.evaluate(() => doCoolStuff({ key: 'x' }));
     const hasCtx = await page.evaluate(() => pianoCtx !== null);
     expect(hasCtx).toBe(true);
+  });
+
+  test('correct letter does NOT play piano in game mode', async ({ page }) => {
+    await load(page);
+    const firstLetter = await page.evaluate(() => gameWordList[gameWordIndex].word[0]);
+    await typeInGame(page, firstLetter);
+    const hasCtx = await page.evaluate(() => pianoCtx !== null);
+    expect(hasCtx).toBe(false);
+  });
+
+  test('space plays piano in game mode', async ({ page }) => {
+    await load(page);
+    await page.evaluate(() => doCoolStuff({ key: ' ' }));
+    const hasCtx = await page.evaluate(() => pianoCtx !== null);
+    expect(hasCtx).toBe(true);
+  });
+
+  test('wrong letter plays piano in game mode', async ({ page }) => {
+    await load(page);
+    const firstLetter = await page.evaluate(() => gameWordList[gameWordIndex].word[0]);
+    const wrongKey = firstLetter === 'z' ? 'a' : 'z';
+    await typeInGame(page, wrongKey);
+    const hasCtx = await page.evaluate(() => pianoCtx !== null);
+    expect(hasCtx).toBe(true);
+  });
+});
+
+test.describe('Hard mode', () => {
+  test('hard button toggles hard mode and Dutch word list', async ({ page }) => {
+    await load(page);
+    await page.click('#hard-btn');
+    const info = await page.evaluate(() => ({
+      hardMode: hardMode,
+      fromHard: hardWordsNL.indexOf(gameWordList[gameWordIndex].word) !== -1,
+      active: document.getElementById('hard-btn').classList.contains('active'),
+    }));
+    expect(info.hardMode).toBe(true);
+    expect(info.fromHard).toBe(true);
+    expect(info.active).toBe(true);
+  });
+
+  test('hard word list has many words', async ({ page }) => {
+    await load(page);
+    const count = await page.evaluate(() => hardWordsNL.length);
+    expect(count).toBeGreaterThanOrEqual(100);
+  });
+
+  test('hard words are lowercase letters only (keyboard-typable)', async ({ page }) => {
+    await load(page);
+    const allValid = await page.evaluate(() => hardWordsNL.every(w => /^[a-z]+$/.test(w)));
+    expect(allValid).toBe(true);
+  });
+
+  test('no duplicate hard words', async ({ page }) => {
+    await load(page);
+    const dup = await page.evaluate(() => {
+      const s = new Set(hardWordsNL);
+      return s.size !== hardWordsNL.length;
+    });
+    expect(dup).toBe(false);
+  });
+
+  test('toggling hard mode off returns to easy list', async ({ page }) => {
+    await load(page);
+    await page.click('#hard-btn');
+    await page.click('#hard-btn');
+    const hardMode = await page.evaluate(() => window.hardMode);
+    expect(hardMode).toBe(false);
   });
 });
 

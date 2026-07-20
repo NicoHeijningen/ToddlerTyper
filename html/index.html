@@ -177,6 +177,24 @@ var gameWords = {
     ]
 };
 
+// --- Hard mode: many common Dutch words (no diacritics, keyboard-friendly) ---
+var hardMode = false;
+var hardEmojis = ['📖','📚','✏️','📝','🔤','🇳🇱','🧠','⭐'];
+var hardWordsNL = [
+    'fiets','tafel','stoel','raam','deur','vloer','muur','tuin','straat','brug',
+    'kerk','molen','dijk','sloot','wolk','regen','sneeuw','wind','storm','zomer',
+    'winter','lente','herfst','ochtend','avond','nacht','klok','school','meester','potlood',
+    'schrift','liniaal','kleur','kwast','papier','schaar','computer','scherm','touw','wagen',
+    'tram','vrachtwagen','vliegtuig','helikopter','raket','ballon','vlieger','ridder','kasteel','prinses',
+    'koning','koningin','prins','heks','tovenaar','reus','kabouter','spook','dokter','tandarts',
+    'bakker','slager','visser','jager','schilder','timmerman','brandweer','politie','soldaat','kapitein',
+    'matroos','piloot','astronaut','kapper','danser','zanger','muzikant','acteur','goochelaar','olifant',
+    'giraffe','nijlpaard','neushoorn','zebra','kameel','kangoeroe','dolfijn','walvis','schildpad','kikker',
+    'salamander','hagedis','slang','sprinkhaan','hommel','peer','druif','kers','pruim','aardbei',
+    'framboos','wortel','komkommer','spinazie','brood','boter','honing','suiker','peper','koffie',
+    'water','koek','snoep','chocola','pannenkoek','krokodil','papegaai','eekhoorn','egel','vleermuis'
+];
+
 function shuffleArray(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
         var j = Math.floor(Math.random() * (i + 1));
@@ -223,6 +241,30 @@ function updateModeButton() {
         btn.classList.remove('active');
         btn.title = 'In Normal Mode - click for Word Game';
         btn.textContent = '🕹️';
+    }
+}
+
+// --- Hard mode: many Dutch dictionary words ---
+function toggleHardMode() {
+    hardMode = !hardMode;
+    if (!gameMode) {
+        // Turning on hard mode implies the word game.
+        toggleGameMode();
+    } else {
+        startNewGameRound();
+    }
+    updateHardButton();
+}
+
+function updateHardButton() {
+    var btn = document.getElementById('hard-btn');
+    if (!btn) return;
+    if (hardMode) {
+        btn.classList.add('active');
+        btn.title = 'Moeilijk (Nederlands woordenboek) - klik voor makkelijk';
+    } else {
+        btn.classList.remove('active');
+        btn.title = 'Makkelijk - klik voor moeilijke Nederlandse woorden';
     }
 }
 
@@ -374,7 +416,14 @@ function highlightKey(letter) {
 }
 
 function startNewGameRound() {
-    var words = gameWords[currentLang] || gameWords['en'];
+    var words;
+    if (hardMode) {
+        words = hardWordsNL.map(function(w, i) {
+            return { word: w, emoji: hardEmojis[i % hardEmojis.length] };
+        });
+    } else {
+        words = gameWords[currentLang] || gameWords['en'];
+    }
     gameWordList = shuffleArray(words.slice());
     gameWordIndex = 0;
     gameTypedCount = 0;
@@ -416,7 +465,7 @@ function showCurrentGameWord() {
 function speakWord(word) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
-        var lang = languages[currentLang];
+        var lang = languages[hardMode ? 'nl' : currentLang];
         setTimeout(function() {
             doSpeak(word, lang.code);
         }, 50);
@@ -426,9 +475,12 @@ function speakWord(word) {
 function renderGameWord(word, typedCount) {
     var container = document.getElementById('game-word');
     container.innerHTML = '';
+    // Shrink long words (hard mode) so they stay on one line.
+    var letterSize = word.length > 9 ? '6vmin' : (word.length > 7 ? '7.5vmin' : '10vmin');
     for (var i = 0; i < word.length; i++) {
         var span = document.createElement('span');
         span.className = 'game-letter';
+        span.style.fontSize = letterSize;
         span.textContent = word[i].toUpperCase();
         if (i < typedCount) {
             span.classList.add('typed');
@@ -731,6 +783,7 @@ window.onload = function () {
     updateLangButtons();
     updateControlsVisibility();
     updateModeButton();
+    updateHardButton();
     // Start game mode by default
     var gameUI = document.getElementById('game-ui');
     var gameInput = document.getElementById('game-input');
@@ -745,17 +798,40 @@ window.onload = function () {
 }
 
 // --- Fullscreen ---
+// Escape-prone keys on Windows: Escape/F11 leave fullscreen, Alt (menu/Alt+Tab),
+// Meta (Win key), Tab and ContextMenu can pull focus out, and 5x Shift triggers
+// StickyKeys. The Keyboard Lock API delivers these to the page instead of the OS.
+function lockKeys() {
+    if (!(navigator.keyboard && navigator.keyboard.lock)) return;
+    try {
+        // No-arg lock() captures every lockable key (strongest).
+        var p = navigator.keyboard.lock();
+        if (p && p.catch) {
+            p.catch(function() {
+                // Fallback to an explicit list if the no-arg form is rejected.
+                try {
+                    navigator.keyboard.lock([
+                        'Escape', 'F11', 'Tab', 'AltLeft', 'AltRight',
+                        'MetaLeft', 'MetaRight', 'ContextMenu',
+                        'ShiftLeft', 'ShiftRight'
+                    ]);
+                } catch (e) {}
+            });
+        }
+    } catch (e) {}
+}
+
 function goFullscreen() {
     var el = document.documentElement;
     var promise;
     if (el.requestFullscreen) { promise = el.requestFullscreen(); }
     else if (el.webkitRequestFullscreen) { promise = el.webkitRequestFullscreen(); }
     else if (el.msRequestFullscreen) { promise = el.msRequestFullscreen(); }
-    // Lock Escape key in fullscreen (Chrome/Edge)
-    if (promise && navigator.keyboard && navigator.keyboard.lock) {
-        promise.then(function() {
-            navigator.keyboard.lock(['Escape']);
-        }).catch(function() {});
+    if (promise && promise.then) {
+        promise.then(lockKeys).catch(function() {});
+    } else {
+        // Older Safari/Edge: no promise returned; lock on the next tick.
+        setTimeout(lockKeys, 100);
     }
 }
 
@@ -770,8 +846,14 @@ function updateControlsVisibility() {
     }
 }
 
-document.addEventListener('fullscreenchange', function() { updateControlsVisibility(); updateViewportVars(); });
-document.addEventListener('webkitfullscreenchange', function() { updateControlsVisibility(); updateViewportVars(); });
+function onFullscreenChange() {
+    updateControlsVisibility();
+    updateViewportVars();
+    // Re-assert the key lock whenever we (re-)enter fullscreen, including via F11.
+    if (isFullscreen()) lockKeys();
+}
+document.addEventListener('fullscreenchange', onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
 // --- Language selection ---
 function setLanguage(lang) {
@@ -1051,6 +1133,8 @@ function doCoolStuff(event) {
     // In game mode, ignore special keys for gameplay, but still show them in history.
     if (gameMode) {
         if (textToDisplay === 'ctrl' || textToDisplay === 'alt' || textToDisplay === 'win' || textToDisplay === 'space') {
+            // These aren't game letters, so play the piano note (unlike correct letters).
+            playPianoNote();
             updateHistory(textToDisplay);
         }
         return;
@@ -1160,7 +1244,7 @@ document.addEventListener('contextmenu', function(event) {
     return false;
 }, false);
 
-// Block Escape, F11 only when in fullscreen
+// Block keys that would leave fullscreen or pull focus out (Windows-friendly).
 document.onkeydown = function(event) {
     if (isFullscreen()) {
         if (event.key === "Escape" || event.keyCode === 27) {
@@ -1169,7 +1253,14 @@ document.onkeydown = function(event) {
             setTimeout(goFullscreen, 100);
             return false;
         }
-        if (event.key === "F11" || event.keyCode === 122) {
+        // F11, Tab, Alt (menu/Alt+Tab), Meta (Win), ContextMenu and the Shift
+        // keys (StickyKeys) can break out or steal focus — swallow them all.
+        if (event.key === "F11" || event.keyCode === 122 ||
+            event.key === "Tab" || event.keyCode === 9 ||
+            event.key === "Alt" || event.key === "AltGraph" ||
+            event.key === "Meta" || event.key === "OS" ||
+            event.key === "ContextMenu" ||
+            event.key === "Shift") {
             event.preventDefault();
             event.stopPropagation();
             return false;
@@ -1783,6 +1874,13 @@ https://codepen.io/maaarj/pen/YZReoK
     filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
 }
 
+#word-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2vmin;
+}
+
 #game-word {
     display: flex;
     justify-content: center;
@@ -1950,31 +2048,28 @@ https://codepen.io/maaarj/pen/YZReoK
 }
 
 #skip-btn {
-    position: absolute;
-    right: 4vw;
-    top: 50%;
-    transform: translateY(-50%);
     border: none;
-    background: rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.7);
-    font-size: 7vmin;
-    width: 12vmin;
-    height: 12vmin;
-    min-width: 44px;
-    min-height: 44px;
+    background: transparent;
+    color: rgba(255,255,255,0.3);
+    font-size: 5vmin;
+    width: 8vmin;
+    height: 8vmin;
+    min-width: 40px;
+    min-height: 40px;
     border-radius: 50%;
     cursor: pointer;
     pointer-events: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s, transform 0.2s;
-    z-index: 1600;
+    transition: color 0.2s, background 0.2s, transform 0.2s;
+    flex: 0 0 auto;
 }
-#skip-btn:hover { background: rgba(255,255,255,0.3); }
-#skip-btn:active { transform: translateY(-50%) scale(0.85); }
+#skip-btn:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.12); }
+#skip-btn:active { transform: scale(0.85); }
 
-#mode-btn.active {
+#mode-btn.active,
+#hard-btn.active {
     background: rgba(255,255,255,0.35);
     box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
 }
@@ -2112,8 +2207,10 @@ https://codepen.io/maaarj/pen/YZReoK
     <!-- Game mode UI (shown above center when game is active) -->
     <div id="game-ui" style="display:none;">
         <div id="game-hint"></div>
-        <div id="game-word"></div>
-        <button id="skip-btn" onclick="skipWord()">&#x23ED;</button>
+        <div id="word-row">
+            <div id="game-word"></div>
+            <button id="skip-btn" onclick="skipWord()" title="Sla dit woord over" aria-label="Skip word">&#x23ED;</button>
+        </div>
         <div id="game-keyboard"></div>
     </div>
 
@@ -2160,6 +2257,7 @@ https://codepen.io/maaarj/pen/YZReoK
         </button>
         <span class="controls-sep"></span>
         <button id="mode-btn" onclick="toggleGameMode()" title="Mode">⌨️</button>
+        <button id="hard-btn" onclick="toggleHardMode()" title="Makkelijk - klik voor moeilijke Nederlandse woorden">🎓</button>
         <span class="controls-sep"></span>
         <button id="fs-btn" onclick="goFullscreen()" title="Fullscreen">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
