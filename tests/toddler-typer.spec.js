@@ -330,12 +330,16 @@ test.describe('On-screen keyboard', () => {
 
   test('keyboard shows after 3 wrong keys', async ({ page }) => {
     await load(page);
-    const firstLetter = await page.evaluate(() => gameWordList[gameWordIndex].word[0]);
-    const wrongKey = firstLetter === 'z' ? 'a' : 'z';
+    await page.waitForTimeout(500);
 
-    await typeInGame(page, wrongKey);
-    await typeInGame(page, wrongKey);
-    await typeInGame(page, wrongKey);
+    await page.evaluate(() => {
+      var entry = gameWordList[gameWordIndex];
+      var wrong = entry.word[0] === 'z' ? 'a' : 'z';
+      wrongKeyCount = 0;
+      doCoolStuff({ key: wrong });
+      doCoolStuff({ key: wrong });
+      doCoolStuff({ key: wrong });
+    });
 
     const opacity = await page.locator('#game-keyboard').evaluate(
       el => getComputedStyle(el).opacity
